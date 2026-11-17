@@ -57,15 +57,24 @@ html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:
 #touch button{pointer-events:auto;font:inherit;font-size:10px;color:#fff;background:rgba(0,0,0,.45);border:2px solid var(--cyan);padding:14px 16px;border-radius:0;box-shadow:3px 3px 0 #000;touch-action:none}
 #touch button#tBoost{border-color:var(--pink)}
 @media (pointer:coarse){#touch.on{display:flex}#bc{bottom:110px}}
+.maps{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#mapsTitle{margin:0 0 30px}
+.maplbl{font-size:clamp(7px,1vw,10px);color:#e9dcff;margin-bottom:12px;letter-spacing:2px}
+.mapbtn{font:inherit;font-size:clamp(7px,1vw,10px);color:#e9dcff;background:rgba(0,0,0,.5);border:2px solid #6a5a8a;padding:10px 12px;cursor:pointer;box-shadow:3px 3px 0 #000;pointer-events:auto}
+.mapbtn:hover{border-color:#fff}
+.mapbtn.on{border-color:var(--gold);color:var(--gold)}
+#mapsHud{margin-top:10px;gap:6px}
+#mapsHud .mapbtn{font-size:7px;padding:6px 7px;box-shadow:2px 2px 0 #000}
+#flash{position:fixed;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .5s}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="scan"></div><div id="vig"></div>
+<div id="scan"></div><div id="vig"></div><div id="flash"></div>
 
 <div id="hud">
   <div id="tl"><div class="lbl">SCORE</div><div id="score" class="val sh">0</div><div class="lbl" style="margin-top:12px">DISTANCE</div><div id="dist" class="val sh" style="font-size:clamp(9px,1.3vw,14px)">0.00 KM</div></div>
-  <div id="tc"><div class="lbl">TIME</div><div id="time" class="sh">40</div><div class="lbl" id="stagelbl" style="margin-top:8px;color:#e9dcff">STAGE 1</div></div>
+  <div id="tc"><div class="lbl">TIME</div><div id="time" class="sh">40</div><div class="lbl" id="stagelbl" style="margin-top:8px;color:#e9dcff">STAGE 1</div><div class="maps" id="mapsHud"></div></div>
   <div id="tr"><div class="lbl">SPEED</div><div id="speed" class="val sh">0 <small>KM/H</small></div></div>
   <div id="bc"><div class="lbl">BOOST · SPACE</div><div class="bar"><div id="boost"></div></div></div>
   <div id="msgs"></div>
@@ -78,6 +87,8 @@ html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:
 <div id="title" class="screen">
   <h1 class="logo">DUSK<br>RUNNER</h1>
   <div class="tag">AN ENDLESS DRIVE INTO THE NEON DUSK</div>
+  <div class="maplbl">SELECT MAP · 1 2 3 (ALSO WORKS MID-RACE)</div>
+  <div class="maps" id="mapsTitle"></div>
   <div class="blink">PRESS ENTER / TAP TO DRIVE</div>
   <div class="keys">
     <b>← →</b> / <b>A D</b> STEER &nbsp; <b>↓</b> / <b>S</b> BRAKE &nbsp; <b>SPACE</b> / <b>↑</b> BOOST<br>
@@ -156,7 +167,35 @@ const BIOMES = [
     mtn0: '#7d9dbd', mtn1: '#3f6a55', fog: '#c2e0f0', grass: ['#3f9a3c', '#378a34'], road: ['#4d5057', '#474a51'],
     rumble: ['#e8323c', '#ffffff'], lane: '#ffffff', props: ['pine', 'pine', 'pine', 'pine', 'rock'], density: 0.5,
     night: 0, skyline: 0, snow: 1 },
+  { name: 'DEEP TRENCH', kind: 'sea', sky0: '#0e5577', sky1: '#062c4a', sky2: '#03182e', sun0: '#000000', sun1: '#000000',
+    mtn0: '#0b2c46', mtn1: '#061d32', fog: '#05213a', grass: ['#173450', '#132d46'], road: ['#1f3a54', '#1b344c'],
+    rumble: ['#3ff3ff', '#0b5f80'], lane: '#8ffcff', props: ['kelp', 'kelp', 'coral', 'angler', 'angler', 'jelly', 'jelly', 'jelly', 'squid', 'serpent', 'serpent'],
+    density: 0.38, night: 0, skyline: 0, snow: 0, walls: true, tunnel: true },
+  { name: 'VOID HIGHWAY', kind: 'space', sky0: '#020109', sky1: '#140a30', sky2: '#3c1660', sun0: '#a8dcff', sun1: '#5a4bd6',
+    mtn0: '#000000', mtn1: '#000000', fog: '#0d0722', grass: ['#000000', '#000000'], road: ['#2b2452', '#251f49'],
+    rumble: ['#b04dff', '#7cff6b'], lane: '#7cff6b', props: ['ufo', 'ufo', 'ufo', 'ufoBeam', 'asteroid', 'asteroid', 'blackhole'],
+    density: 0.3, night: 1, skyline: 0, snow: 0, walls: true },
 ];
+const MAPS = [
+  { name: 'CLASSIC ROAD', short: 'ROAD', biomes: [0, 1, 2, 3] },
+  { name: 'DEEP TRENCH', short: 'SEA', biomes: [4] },
+  { name: 'VOID HIGHWAY', short: 'SPACE', biomes: [5] },
+];
+let curMap = 0; try { curMap = clamp(+localStorage.getItem('duskRunnerMap') || 0, 0, MAPS.length - 1); } catch (e) {}
+const mapBiome = n => { const b = MAPS[curMap].biomes; return b[Math.floor(n / CP_SEGS) % b.length]; };
+// placement rules for roadside / floating props
+const PROPS = {
+  building: { off: [1.6, 4.8] }, billboard: { off: [1.25, 1.7], rare: 0.8 },
+  kelp: { off: [1.35, 3.6] }, coral: { off: [1.35, 3.2] },
+  angler: { off: [1.5, 5], alt: [300, 2200], bob: 140, drift: 0.25 },
+  jelly: { off: [1.4, 5.5], alt: [500, 3200], bob: 300, above: 0.35, aboveAlt: [2900, 3900] },
+  squid: { off: [2, 6], alt: [800, 2800], bob: 220 },
+  serpent: { off: [1.6, 5.5], alt: [300, 2200], bob: 160, drift: 0.6, above: 0.25, aboveAlt: [3000, 3800] },
+  ufo: { off: [1.4, 5.5], alt: [400, 2600], bob: 220, drift: 0.9, above: 0.4, aboveAlt: [1500, 2500] },
+  ufoBeam: { off: [1.6, 4.5], alt: [1700, 2700], bob: 120, drift: 0.3 },
+  asteroid: { off: [1.4, 7], alt: [-2200, 2600], bob: 90 },
+  blackhole: { off: [4, 9], alt: [800, 2600], bob: 0, rare: 0.8 },
+};
 const ENV_KEYS = ['sky0', 'sky1', 'sky2', 'sun0', 'sun1', 'mtn0', 'mtn1', 'fog'];
 for (const b of BIOMES) {
   b.c = {}; for (const k of ENV_KEYS) b.c[k] = hex(b[k]);
@@ -171,7 +210,125 @@ function mk(w, h, draw) {
   return c;
 }
 const SPR = {};
-const addSpr = (key, img, w, hit = 0.5) => (SPR[key] = { img, w, hit });
+const addSpr = (key, img, w, hit = 0.5) => (SPR[key] = Array.isArray(img) ? { img: img[0], frames: img, w, hit } : { img, w, hit });
+const ell = (r, cx, cy, rx, ry, col) => { for (let y = -ry; y <= ry; y++) { const hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry)))); r(cx - hw, cy + y, hw * 2, 1, col); } };
+const dome = (r, cx, top, rx, h, col) => { for (let y = 0; y <= h; y++) { const hw = Math.round(rx * Math.sqrt(1 - ((h - y) / h) ** 2)); r(cx - hw, top + y, hw * 2, 1, col); } };
+function glow(g, x, y, rad, rgbStr, a) {
+  const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+  gr.addColorStop(0, `rgba(${rgbStr},${a})`); gr.addColorStop(1, `rgba(${rgbStr},0)`);
+  g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+}
+function blackHoleImg(f) {
+  return mk(72, 72, (g, r) => {
+    const cx = 36, cy = 36;
+    glow(g, cx, cy, 36, '170,80,255', 0.45);
+    const disk = front => {
+      for (let k = 0; k < 3; k++) {
+        const rx = 31 - k * 5, ry = 8 - k * 1.6;
+        for (let a = 0; a < Math.PI * 2; a += 0.015) {
+          const s = Math.sin(a); if (front ? s < 0 : s >= 0) continue;
+          const v = 0.5 + 0.5 * Math.sin(a * 3 + f * Math.PI / 4 + k * 1.7);
+          r(Math.round(cx + Math.cos(a) * rx), Math.round(cy + s * ry), 2, 2, rgb(mix([255, 110, 30], [255, 245, 210], v * (1 - k * 0.15))));
+        }
+      }
+    };
+    disk(false);
+    for (let a = 0; a < Math.PI * 2; a += 0.04) {
+      const v = 0.5 + 0.5 * Math.sin(a * 2 - f * Math.PI / 4);
+      r(Math.round(cx + Math.cos(a) * 12.5), Math.round(cy + Math.sin(a) * 12.5), 1, 1, rgb(mix([255, 140, 50], [255, 255, 230], v)));
+    }
+    ell(r, cx, cy, 11, 11, '#000000');
+    disk(true);
+  });
+}
+function buildSeaSpace() {
+  addSpr('angler', mk(52, 36, (g, r) => {
+    glow(g, 8, 4, 10, '255,240,140', 0.9);
+    for (let i = 0; i < 9; i++) r(43 + i, 20 - i, 1, i * 2 + 1, '#16223a');
+    ell(r, 26, 20, 18, 13, '#22304a');
+    ell(r, 28, 26, 13, 5, '#2e4262');
+    r(8, 18, 15, 9, '#3a0a16');
+    for (let i = 0; i < 5; i++) { r(9 + i * 3, 18, 1, 3, '#f4f4f4'); r(10 + i * 3, 24, 1, 3, '#f4f4f4'); }
+    r(17, 10, 6, 6, '#0b0f18'); r(18, 11, 4, 4, '#fff07a'); r(19, 12, 2, 2, '#000');
+    for (let t = 0; t <= 1; t += 0.04) r(Math.round(lerp(25, 9, t)), Math.round(lerp(8, 5, t) - Math.sin(t * Math.PI) * 5), 1, 1, '#5a6a8a');
+    r(6, 2, 4, 4, '#fff7a0'); r(7, 3, 2, 2, '#ffffff');
+    for (const [x, y] of [[30, 13], [36, 17], [33, 23], [24, 29], [40, 22], [28, 9]]) r(x, y, 1, 1, '#3ff3ff');
+    for (const x of [28, 32, 36]) r(x, 5 + (x - 28) / 2, 1, 3, '#16223a');
+  }), 1100);
+  addSpr('jelly', mk(28, 46, (g, r) => {
+    glow(g, 14, 12, 16, '255,120,220', 0.35);
+    for (let i = 0; i < 5; i++) { const x0 = 5 + i * 4.5; for (let y = 16; y < 46; y++) r(Math.round(x0 + Math.sin(y * 0.35 + i) * 1.6), y, 1, 1, y % 3 ? 'rgba(255,150,230,0.75)' : 'rgba(180,240,255,0.95)'); }
+    dome(r, 14, 5, 12, 11, 'rgba(255,100,205,0.85)');
+    dome(r, 14, 9, 7, 6, 'rgba(255,215,245,0.75)');
+    for (let x = 3; x < 25; x += 3) r(x, 16, 2, 1, '#c8fdff');
+  }), 520);
+  addSpr('squid', mk(40, 66, (g, r) => {
+    for (let y = 0; y < 30; y++) { const hw = Math.round(2 + y / 30 * 10); r(20 - hw, y, hw * 2, 1, y % 5 === 0 ? '#c23a5a' : '#a3243f'); }
+    r(7, 3, 5, 9, '#8a1d36'); r(28, 3, 5, 9, '#8a1d36');
+    ell(r, 20, 33, 11, 6, '#a3243f');
+    r(11, 30, 6, 6, '#ffd23f'); r(13, 31, 2, 4, '#000'); r(23, 30, 6, 6, '#ffd23f'); r(25, 31, 2, 4, '#000');
+    for (let i = 0; i < 8; i++) {
+      const x0 = 10.5 + i * 2.7, len = i === 2 || i === 5 ? 66 : 58;
+      for (let y = 37; y < len; y++) { const x = Math.round(x0 + Math.sin(y * 0.22 + i) * 2.5 * (y - 37) / 26); r(x, y, 2, 1, '#a3243f'); if (y % 4 === 0) r(x, y, 1, 1, '#ff9ab0'); }
+    }
+    r(17, 8, 2, 2, '#ff6f91'); r(22, 16, 2, 2, '#ff6f91'); r(16, 22, 2, 2, '#ff6f91');
+  }), 950);
+  addSpr('serpent', mk(80, 28, (g, r) => {
+    for (let x = 12; x < 80; x++) {
+      const y = 14 + Math.round(Math.sin(x * 0.16) * 5), th = Math.max(1, Math.round(6 - (x - 12) / 68 * 5));
+      if (x % 3 === 0) r(x, y - th - 2, 1, 2, '#3fae8a');
+      r(x, y - th, 1, th * 2, '#1f4d44'); r(x, y - th, 1, 1, '#2f7a62');
+      if (x % 6 === 0) r(x, y, 1, 1, '#7cff6b');
+    }
+    const hy = 14 + Math.round(Math.sin(1.9) * 5);
+    ell(r, 9, hy, 9, 5, '#1f4d44');
+    r(0, hy + 1, 8, 3, '#3a0a16');
+    for (let i = 0; i < 3; i++) { r(1 + i * 2, hy + 1, 1, 1, '#fff'); r(2 + i * 2, hy + 3, 1, 1, '#fff'); }
+    r(7, hy - 3, 2, 2, '#ff3d5a');
+  }), 1700);
+  addSpr('kelp', mk(18, 72, (g, r) => {
+    for (let s = 0; s < 2; s++) for (let y = 0; y < 72; y++) {
+      const x = Math.round(5 + s * 6 + Math.sin(y * 0.12 + s * 2) * 2);
+      r(x, y + s * 8, 2, 1, '#2f7a4a'); if (y % 7 === 0) r(x + (y % 14 ? 2 : -3), y + s * 8, 3, 2, '#3f9a5a');
+    }
+  }), 520, 0.3);
+  addSpr('coral', mk(30, 24, (g, r) => {
+    for (const [x, c] of [[5, '#ff6f91'], [12, '#ffb347'], [19, '#c56bff'], [25, '#ff6f91']]) {
+      r(x, 8, 2, 14, c); r(x - 2, 10, 2, 2, c); r(x + 2, 6, 2, 2, c); r(x - 1, 3, 4, 2, c); r(x, 2, 1, 1, '#fff');
+    }
+    r(0, 20, 30, 4, '#2a3a50');
+  }), 760, 0.6);
+  addSpr('leviathan', mk(160, 48, (g, r) => {
+    const c = '#020b16';
+    ell(r, 72, 24, 62, 15, c); ell(r, 20, 24, 14, 10, c);
+    for (let i = 0; i < 18; i++) { r(132 + i, 24 - i, 2, 3, c); r(132 + i, 22 + i, 2, 3, c); }
+    for (let i = 0; i < 12; i++) r(60 + i, 37 + i / 2, 3, 2, c);
+    r(16, 20, 2, 2, '#ffd23f');
+  }), 1);
+
+  const ufo = (beam, f) => mk(52, beam ? 74 : 30, (g, r) => {
+    if (beam) {
+      const gr = g.createLinearGradient(0, 22, 0, 74); gr.addColorStop(0, 'rgba(124,255,107,0.45)'); gr.addColorStop(1, 'rgba(124,255,107,0)');
+      g.fillStyle = gr; g.beginPath(); g.moveTo(18, 22); g.lineTo(34, 22); g.lineTo(50, 74); g.lineTo(2, 74); g.closePath(); g.fill();
+      for (let y = 28; y < 74; y += 6) r(26 - (y - 22) * 0.45 + ((y + f * 2) % 7), y + (f * 2) % 6, 1, 1, 'rgba(220,255,210,0.8)');
+    }
+    dome(r, 26, 2, 10, 10, 'rgba(150,240,255,0.6)');
+    ell(r, 26, 9, 4, 4, '#7cff6b'); r(23, 8, 2, 2, '#000'); r(27, 8, 2, 2, '#000');
+    r(26, 3, 1, 2, '#7cff6b'); r(26, 2, 1, 1, f % 2 ? '#ff4fa3' : '#ffd23f');
+    r(20, 5, 2, 3, 'rgba(255,255,255,0.75)');
+    ell(r, 26, 16, 25, 5, '#8f98b0'); ell(r, 26, 15, 22, 3, '#c3cad8'); r(4, 18, 44, 2, '#5a6278');
+    const L = ['#ff4fa3', '#ffd23f', '#3ff3ff'];
+    for (let i = 0; i < 7; i++) r(Math.round(6 + i * 6.5), 17, 3, 2, L[(i + f) % 3]);
+    ell(r, 26, 21, 8, 2, '#4a5068'); r(22, 22, 8, 1, f % 2 ? '#7cff6b' : '#3a8a40');
+  });
+  addSpr('ufo', [0, 1, 2].map(f => ufo(false, f)), 950);
+  addSpr('ufoBeam', [0, 1, 2].map(f => ufo(true, f)), 950);
+  addSpr('asteroid', mk(30, 26, (g, r) => {
+    ell(r, 15, 13, 14, 11, '#6e6476'); ell(r, 13, 11, 11, 8, '#857a8e'); ell(r, 11, 8, 5, 3, '#a196aa');
+    for (const [x, y, s] of [[18, 14, 4], [8, 16, 3], [20, 6, 2]]) { ell(r, x, y, s, s - 1, '#4e4656'); }
+  }), 750);
+  addSpr('blackhole', [0, 1, 2, 3, 4, 5, 6, 7].map(blackHoleImg), 3400);
+}
 
 function carImg(body, lean, brake, player) {
   const dark = shade(body, 0.6), s = lean * 2;
@@ -286,7 +443,7 @@ function buildSprites() {
   addSpr('archCP', arch('CHECKPOINT', '#ffd23f', '#3a0d4a'), ROAD_W * 2.35, 0);
   addSpr('archStart', arch('START', '#ff4fa3', '#ffffff'), ROAD_W * 2.35, 0);
 }
-buildSprites();
+buildSprites(); buildSeaSpace();
 
 // ================= AUDIO =================
 const Snd = {
@@ -373,7 +530,7 @@ function addSegment(curve, y) {
   const n = segments.length;
   segments.push({
     index: n, curve, sprites: [], cars: [], clip: 0, fog: 1,
-    biome: Math.floor(n / CP_SEGS) % BIOMES.length,
+    biome: mapBiome(n),
     p1: { world: { y: lastY(), z: n * SEG }, camera: {}, screen: {} },
     p2: { world: { y, z: (n + 1) * SEG }, camera: {}, screen: {} },
   });
@@ -410,13 +567,14 @@ function decorate(from, to) {
     if (b.lamps && i % 10 === 0) { s.sprites.push({ key: 'lamp', offset: -1.12 }); s.sprites.push({ key: 'lamp', offset: 1.12 }); }
     for (const side of [-1, 1]) {
       if (Math.random() >= b.density) continue;
-      const base = pick(b.props);
-      if (base === 'billboard' && Math.random() < 0.8) continue;
-      const k = variant(base);
-      let off = rnd(1.2, 3.4);
-      if (base === 'building') off = rnd(1.6, 4.8);
-      if (base === 'billboard') off = rnd(1.25, 1.7);
-      s.sprites.push({ key: k, offset: side * off });
+      const base = pick(b.props), cfg = PROPS[base] || { off: [1.2, 3.4] };
+      if (cfg.rare && Math.random() < cfg.rare) continue;
+      const sp = { key: variant(base), offset: side * rnd(cfg.off[0], cfg.off[1]) };
+      if (cfg.alt) {
+        Object.assign(sp, { float: true, nc: true, alt: rnd(cfg.alt[0], cfg.alt[1]), bob: cfg.bob || 0, drift: cfg.drift || 0, ph: Math.random() * 6.28 });
+        if (cfg.above && Math.random() < cfg.above) { sp.offset = rnd(-0.9, 0.9); sp.alt = rnd(cfg.aboveAlt[0], cfg.aboveAlt[1]); }
+      }
+      s.sprites.push(sp);
     }
   }
 }
@@ -480,8 +638,26 @@ function startGame() {
   $('title').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden');
   elHud.classList.add('on'); $('touch').classList.add('on');
   elMsgs.innerHTML = '';
-  stageBanner(1, BIOMES[0].name);
+  stageBanner(1, BIOMES[mapBiome(0)].name);
 }
+function renderMapButtons() {
+  for (const [id, full] of [['mapsTitle', true], ['mapsHud', false]]) {
+    $(id).innerHTML = MAPS.map((m, i) => `<button class="mapbtn${i === curMap ? ' on' : ''}" data-i="${i}" tabindex="-1">${i + 1} · ${full ? m.name : m.short}</button>`).join('');
+  }
+}
+function switchMap(i) {
+  if (i === curMap || i < 0 || i >= MAPS.length || paused) return;
+  curMap = i;
+  try { localStorage.setItem('duskRunnerMap', String(i)); } catch (e) {}
+  for (let k = pruneIdx; k < segments.length; k++) { const s = segments[k]; if (s) { s.biome = mapBiome(k); s.sprites = []; } }
+  decorate(pruneIdx, segments.length);
+  const fl = $('flash'); fl.style.transition = 'none'; fl.style.opacity = '0.85'; void fl.offsetWidth; fl.style.transition = 'opacity .6s'; fl.style.opacity = '0';
+  Snd.whoosh();
+  if (state === 'play') stageBanner(cpCount + 1, BIOMES[mapBiome(Math.floor((position + PLAYER_Z) / SEG))].name);
+  renderMapButtons();
+}
+renderMapButtons();
+document.addEventListener('click', e => { const b = e.target.closest('.mapbtn'); if (b) { switchMap(+b.dataset.i); b.blur(); } });
 function gameOver() {
   state = 'over'; overT = 0; time = 0;
   const isBest = score > best;
@@ -515,6 +691,8 @@ addEventListener('keydown', e => {
   if (k) { keys[k] = true; e.preventDefault(); }
   if ((e.code === 'Enter' || e.code === 'Space') && canStart() && !e.repeat) { startGame(); return; }
   if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) togglePause();
+  const dm = /^(Digit|Numpad)([1-9])$/.exec(e.code);
+  if (dm && !e.repeat) switchMap(+dm[2] - 1);
   if (e.code === 'KeyM' && !e.repeat) { Snd.toggleMute(); elMute.textContent = 'M · SOUND ' + (Snd.muted ? 'OFF' : 'ON'); }
   Snd.init();
 });
@@ -528,7 +706,7 @@ function syncPointers() {
 }
 addEventListener('pointerdown', e => {
   Snd.init();
-  if (e.target.closest('#touch')) return;
+  if (e.target.closest('#touch, .mapbtn')) return;
   if (canStart()) { startGame(); return; }
   if (paused) { togglePause(); return; }
   if (state === 'play' && e.pointerType !== 'mouse') { pointers.set(e.pointerId, e.clientX < innerWidth / 2 ? 'left' : 'right'); syncPointers(); }
@@ -599,7 +777,17 @@ function update(dt) {
   else if (live) speed += (braking ? BRAKE : ACCEL * (boosting ? 1.8 : 1)) * dt;
   else if (state === 'over') speed += DECEL * 1.6 * dt;
   if (speed > maxSp) speed = Math.max(maxSp, speed + DECEL * 1.5 * dt);
-  offroad = Math.abs(playerX) > 1;
+  if (BIOMES[pSeg.biome].walls) {
+    // glass tunnel / force-field barrier: scrape along it instead of leaving the road
+    offroad = false;
+    if (Math.abs(playerX) > 0.9) {
+      playerX = Math.sign(playerX) * 0.9;
+      if (state !== 'title' && speed > MAX_SPEED * 0.2) {
+        speed += OFFROAD_DECEL * 0.5 * dt; shake = Math.max(shake, 0.06);
+        if (Math.random() < 0.6) emit(W / 2 + Math.sign(playerX) * W * 0.11, H - 22, 2, BIOMES[pSeg.biome].kind === 'sea' ? ['#8ffcff', '#ffffff'] : ['#b04dff', '#7cff6b', '#ffffff'], 60, -90, 0.3, 2);
+      }
+    }
+  } else offroad = Math.abs(playerX) > 1;
   if (offroad && speed > OFFROAD_LIMIT) speed += OFFROAD_DECEL * dt;
   speed = clamp(speed, 0, MAX_SPEED * BOOST_MUL);
   playerX = clamp(playerX, -2.6, 2.6);
@@ -669,7 +857,7 @@ function update(dt) {
       const bonus = Math.max(16, 32 - cpCount * 2);
       cpCount++; nextCP += CP_SEGS * SEG; time += bonus; score += 1000 * cpCount;
       toast(`CHECKPOINT +${bonus}s`, 'gold'); Snd.chime();
-      stageBanner(cpCount + 1, BIOMES[cpCount % BIOMES.length].name);
+      stageBanner(cpCount + 1, BIOMES[mapBiome(cpCount * CP_SEGS)].name);
     }
     time -= dt;
     if (time < 10 && time > 0) { lowBeep -= dt; if (lowBeep <= 0) { lowBeep = 1; Snd.beep(false); } }
@@ -709,9 +897,9 @@ function project(p, camX, camY, camZ) {
 function poly(x1, y1, x2, y2, x3, y3, x4, y4, c) {
   ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4); ctx.closePath(); ctx.fill();
 }
-function drawSegment(x1, y1, w1, x2, y2, w2, fog, col, fogCol) {
+function drawSegment(x1, y1, w1, x2, y2, w2, fog, col, fogCol, floating) {
   const r1 = w1 / 6, r2 = w2 / 6, l1 = w1 / 32, l2 = w2 / 32;
-  ctx.fillStyle = col.grass; ctx.fillRect(0, y2, W, y1 - y2);
+  if (!floating) { ctx.fillStyle = col.grass; ctx.fillRect(0, y2, W, y1 - y2); }
   poly(x1 - w1 - r1, y1, x1 - w1, y1, x2 - w2, y2, x2 - w2 - r2, y2, col.rumble);
   poly(x1 + w1 + r1, y1, x1 + w1, y1, x2 + w2, y2, x2 + w2 + r2, y2, col.rumble);
   poly(x1 - w1, y1, x1 + w1, y1, x2 + w2, y2, x2 - w2, y2, col.road);
@@ -720,7 +908,12 @@ function drawSegment(x1, y1, w1, x2, y2, w2, fog, col, fogCol) {
     let lx1 = x1 - w1 + lw1, lx2 = x2 - w2 + lw2;
     for (let l = 1; l < LANES; l++, lx1 += lw1, lx2 += lw2) poly(lx1 - l1 / 2, y1, lx1 + l1 / 2, y1, lx2 + l2 / 2, y2, lx2 - l2 / 2, y2, col.lane);
   }
-  if (fog < 0.99) { ctx.globalAlpha = 1 - fog; ctx.fillStyle = fogCol; ctx.fillRect(0, y2, W, y1 - y2); ctx.globalAlpha = 1; }
+  if (fog < 0.99) {
+    ctx.globalAlpha = 1 - fog;
+    if (floating) poly(x1 - w1 - r1, y1, x1 + w1 + r1, y1, x2 + w2 + r2, y2, x2 - w2 - r2, y2, fogCol);
+    else { ctx.fillStyle = fogCol; ctx.fillRect(0, y2, W, y1 - y2); }
+    ctx.globalAlpha = 1;
+  }
 }
 function drawSprite(img, worldW, scale, x, y, ox, oy, clipY) {
   const dw = worldW * scale * K; if (dw < 0.6 || dw > W * 6) return;
@@ -733,10 +926,10 @@ function drawSprite(img, worldW, scale, x, y, ox, oy, clipY) {
   ctx.drawImage(img, 0, 0, img.width, sh, dx, dy, Math.round(dw), Math.round(dh - clipH));
 }
 function computeEnv(idx) {
-  const bi = Math.floor(idx / CP_SEGS), N = BIOMES.length;
-  const cur = BIOMES[bi % N], prev = BIOMES[(bi - 1 + N) % N];
+  const bi = Math.floor(idx / CP_SEGS);
+  const cur = BIOMES[mapBiome(idx)], prev = bi === 0 ? cur : BIOMES[mapBiome(idx - CP_SEGS)];
   const t = bi === 0 ? 1 : Math.min(1, (idx % CP_SEGS) / 140);
-  const e = {};
+  const e = { kind: cur.kind };
   for (const k of ENV_KEYS) e[k] = mix(prev.c[k], cur.c[k], t);
   e.night = lerp(prev.night, cur.night, t); e.skyline = lerp(prev.skyline, cur.skyline, t); e.snow = lerp(prev.snow, cur.snow, t);
   e.fogStr = rgb(e.fog);
@@ -763,7 +956,69 @@ function drawRidge(off, col, amp, freq, base, sky, snow) {
     ctx.globalAlpha = 1;
   }
 }
+const stars2 = Array.from({ length: 240 }, () => ({ x: Math.random(), y: Math.random(), b: Math.random(), c: pick(['255,255,255', '180,210,255', '255,200,240', '200,255,220']) }));
+const wrapX = (x, span) => ((x % span) + span) % span;
+function drawSeaBackground(e, now) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, rgb(e.sky0)); g.addColorStop(0.45, rgb(e.sky1)); g.addColorStop(1, rgb(e.sky2));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // light shafts from the far-away surface
+  for (let i = 0; i < 5; i++) {
+    const x0 = wrapX((i * 0.23 + 0.08) * W - bgFar * 0.2, W * 1.2) - W * 0.1 + Math.sin(now / 3000 + i) * 12;
+    ctx.fillStyle = `rgba(150,230,255,${0.05 + 0.03 * Math.sin(now / 900 + i * 2)})`;
+    poly(x0 - 5, 0, x0 + 7, 0, x0 + 46 + i * 6, H * 0.55, x0 - 12, H * 0.55, ctx.fillStyle);
+  }
+  // leviathan drifting through the gloom
+  const lv = SPR.leviathan.img, lw = W * 0.55, lh = lw * lv.height / lv.width;
+  ctx.globalAlpha = 0.75;
+  ctx.drawImage(lv, Math.round(wrapX(now * 0.012 - bgFar * 0.4, W + lw * 2) - lw), Math.round(H * 0.16 + Math.sin(now / 2500) * 6), Math.round(lw), Math.round(lh));
+  ctx.globalAlpha = 1;
+  const hz = Math.round(H * 0.5);
+  drawRidge(bgFar, e.mtn0, H * 0.14, 0.014, hz + 2, 0, 0);
+  drawRidge(bgNear + 500, e.mtn1, H * 0.07, 0.03, hz + 2, 0, 0);
+}
+function drawSpaceBackground(e, now) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, rgb(e.sky0)); g.addColorStop(0.5, rgb(e.sky2)); g.addColorStop(0.62, rgb(e.sky1)); g.addColorStop(1, rgb(e.sky0));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // nebula clouds
+  for (const [fx, fy, rr, col] of [[0.2, 0.3, 0.45, '176,77,255'], [0.75, 0.7, 0.5, '63,243,255'], [0.55, 0.15, 0.35, '255,79,163']]) {
+    const x = wrapX(fx * W * 1.5 - bgFar * 0.15, W * 1.5) - W * 0.25;
+    glow(ctx, x, fy * H, rr * H, col, 0.16);
+  }
+  for (const s of stars2) {
+    const tw = 0.55 + 0.45 * Math.sin(now / 350 + s.b * 30);
+    ctx.fillStyle = `rgba(${s.c},${(0.25 + 0.75 * s.b) * tw})`;
+    ctx.fillRect(Math.floor(wrapX(s.x * W - bgFar * (0.2 + s.b * 0.4), W)), Math.floor(s.y * H), s.b > 0.93 ? 2 : 1, s.b > 0.93 ? 2 : 1);
+  }
+  // ringed planet
+  const pr = Math.round(H * 0.08), px = Math.round(wrapX(W * 0.22 - bgFar * 0.25, W * 1.6) - W * 0.2), py = Math.round(H * 0.24);
+  for (let dy = -pr; dy <= pr; dy++) {
+    const hw = Math.sqrt(pr * pr - dy * dy), t = (dy + pr) / (2 * pr);
+    ctx.fillStyle = rgb(mix(e.sun0, e.sun1, (Math.floor(t * 7) % 2 ? 0.25 : 0) + t * 0.7));
+    ctx.fillRect(Math.round(px - hw), py + dy, Math.round(hw * 2), 1);
+  }
+  ctx.strokeStyle = 'rgba(220,200,255,0.7)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(px, py, pr * 1.9, pr * 0.45, -0.25, 0, Math.PI * 2); ctx.stroke();
+  // the big black hole looming over the horizon
+  const bh = SPR.blackhole.frames[Math.floor(now / 120) % 8], bs = Math.round(H * 0.62);
+  ctx.drawImage(bh, Math.round(wrapX(W * 0.78 - bgFar * 0.35, W * 1.8) - W * 0.4 - bs / 2), Math.round(H * 0.47 - bs * 0.62), bs, bs);
+}
+function drawRib(seg) {
+  const x = seg.p1.screen.x, y = seg.p1.screen.y, w = seg.p1.screen.w;
+  if (w > W * 4) return;
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, seg.clip); ctx.clip();
+  ctx.lineWidth = Math.max(1, w * 0.035); ctx.strokeStyle = '#8fc4d8';
+  ctx.beginPath(); ctx.ellipse(x, y, w * 1.18, w * 1.25, 0, Math.PI, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = Math.max(1, w * 0.012); ctx.strokeStyle = 'rgba(200,255,255,0.55)';
+  ctx.beginPath(); ctx.ellipse(x, y, w * 1.14, w * 1.21, 0, Math.PI * 1.12, Math.PI * 1.38); ctx.stroke();
+  if (seg.index % 8 === 0) { ctx.fillStyle = '#8ffcff'; const s = Math.max(1, w * 0.04); ctx.fillRect(x - s / 2, y - w * 1.25 - s / 2, s, s); }
+  ctx.restore();
+}
 function drawBackground(e) {
+  const now = performance.now();
+  if (e.kind === 'sea') return drawSeaBackground(e, now);
+  if (e.kind === 'space') return drawSpaceBackground(e, now);
   const hz = Math.round(H * 0.5);
   const g = ctx.createLinearGradient(0, 0, 0, hz);
   g.addColorStop(0, rgb(e.sky0)); g.addColorStop(0.6, rgb(e.sky1)); g.addColorStop(1, rgb(e.sky2));
@@ -805,6 +1060,7 @@ function render() {
   const pPct = (front % SEG) / SEG;
   const playerY = lerp(pSeg.p1.world.y, pSeg.p2.world.y, pPct);
   const env = computeEnv(pSeg.index);
+  const now = performance.now();
 
   ctx.save();
   if (shake > 0) ctx.translate(Math.round(rnd(-1, 1) * shake * 10), Math.round(rnd(-1, 1) * shake * 6));
@@ -819,8 +1075,8 @@ function render() {
     project(seg.p2, playerX * ROAD_W - x - dx, playerY + CAM_H, position);
     x += dx; dx += seg.curve;
     if (seg.p1.camera.z <= CAM_DEPTH || seg.p2.screen.y >= seg.p1.screen.y || seg.p2.screen.y >= maxy) continue;
-    const col = BIOMES[seg.biome].seg[Math.floor(seg.index / RUMBLE) % 2];
-    drawSegment(seg.p1.screen.x, seg.p1.screen.y, seg.p1.screen.w, seg.p2.screen.x, seg.p2.screen.y, seg.p2.screen.w, seg.fog, col, env.fogStr);
+    const sb = BIOMES[seg.biome], col = sb.seg[Math.floor(seg.index / RUMBLE) % 2];
+    drawSegment(seg.p1.screen.x, seg.p1.screen.y, seg.p1.screen.w, seg.p2.screen.x, seg.p2.screen.y, seg.p2.screen.w, seg.fog, col, env.fogStr, sb.kind === 'space');
     maxy = seg.p1.screen.y;
   }
 
@@ -828,11 +1084,19 @@ function render() {
     const seg = segments[base.index + n]; if (!seg) continue;
     if (seg.p1.camera.z > CAM_DEPTH) {
       ctx.globalAlpha = clamp(seg.fog * 1.5, 0, 1);
+      const sc = seg.p1.screen.scale;
       for (const sp of seg.sprites) {
-        const def = SPR[sp.key], sc = seg.p1.screen.scale;
-        const sx = seg.p1.screen.x + sc * sp.offset * ROAD_W * K;
-        drawSprite(def.img, def.w, sc, sx, seg.p1.screen.y, sp.center ? -0.5 : (sp.offset < 0 ? -1 : 0), -1, seg.clip);
+        const def = SPR[sp.key];
+        const img = def.frames ? def.frames[Math.floor(now / 130 + (sp.ph || 0) * 3) % def.frames.length] : def.img;
+        if (sp.float) {
+          const off = sp.offset + sp.drift * Math.sin(now / 1500 + sp.ph);
+          const alt = sp.alt + sp.bob * Math.sin(now / 700 + sp.ph);
+          drawSprite(img, def.w, sc, seg.p1.screen.x + sc * off * ROAD_W * K, seg.p1.screen.y - alt * sc * K, -0.5, -0.5, seg.clip);
+        } else {
+          drawSprite(img, def.w, sc, seg.p1.screen.x + sc * sp.offset * ROAD_W * K, seg.p1.screen.y, sp.center ? -0.5 : (sp.offset < 0 ? -1 : 0), -1, seg.clip);
+        }
       }
+      if (n > 1 && seg.index % 4 === 0 && BIOMES[seg.biome].tunnel) drawRib(seg);
       for (const car of seg.cars) {
         const pc = (car.z % SEG) / SEG;
         const sc = lerp(seg.p1.screen.scale, seg.p2.screen.scale, pc);
@@ -847,6 +1111,14 @@ function render() {
   }
 
   ctx.globalAlpha = 1;
+  if (env.kind === 'sea') {
+    ctx.fillStyle = 'rgba(90,200,255,0.06)'; ctx.fillRect(0, 0, W, H);
+    for (const s of stars2) {
+      if (s.b < 0.6) continue;
+      ctx.fillStyle = `rgba(210,245,255,${(s.b - 0.5) * 0.9})`;
+      ctx.fillRect(Math.floor(wrapX(s.x * W - bgNear * 0.8 + Math.sin(now / 2000 + s.b * 9) * 6, W)), Math.floor(wrapX(s.y * H + now * 0.006 * s.b, H)), 1, 1);
+    }
+  }
   for (const p of particles) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(p.x | 0, p.y | 0, p.s, p.s); }
   ctx.globalAlpha = 1;
   if (boosting) drawSpeedLines();
