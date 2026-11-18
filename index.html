@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Dusk Runner</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#07020f">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<!-- Press Start 2P (SIL OFL 1.1, see fonts/OFL.txt), embedded so the game works offline straight from file:// -->
+<style>@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,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) format('woff2')}</style>
 <style>
 :root{--ink:#fff7ff;--pink:#ff4fa3;--cyan:#3ff3ff;--gold:#ffd23f;--bg:#07020f}
 *{box-sizing:border-box}
@@ -65,6 +67,14 @@ html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:
 .mapbtn.on{border-color:var(--gold);color:var(--gold)}
 #mapsHud{margin-top:10px;gap:6px}
 #mapsHud .mapbtn{font-size:7px;padding:6px 7px;box-shadow:2px 2px 0 #000}
+#recbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 32px);text-align:center;z-index:5}
+#recbar.off{display:none}
+#recStatus{font-size:clamp(6px,.9vw,9px);color:#e9dcff;text-shadow:1px 1px 0 #000;line-height:1.6}
+#recStatus.ok{color:#7cff6b}#recStatus.warn{color:var(--gold)}
+#recbar .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.recbtn{font:inherit;font-size:clamp(6px,.9vw,9px);color:#e9dcff;background:rgba(0,0,0,.55);border:2px solid #6a5a8a;padding:7px 9px;cursor:pointer;box-shadow:2px 2px 0 #000}
+.recbtn:hover{border-color:#fff}.recbtn.hot{border-color:var(--cyan);color:var(--cyan)}
+#oRank{color:var(--gold)}
 #flash{position:fixed;inset:0;pointer-events:none;background:#fff;opacity:0;transition:opacity .5s}
 </style>
 </head>
@@ -104,9 +114,19 @@ html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:
     SCORE <span id="oScore">0</span><br>
     DISTANCE <span id="oDist">0</span><br>
     CHECKPOINTS <span id="oCp">0</span> · BEST COMBO <span id="oCombo">0</span><br>
-    BEST <span id="oBest">0</span> <span id="newbest" class="hidden">NEW BEST!</span>
+    BEST <span id="oBest">0</span> <span id="newbest" class="hidden">NEW BEST!</span><br>
+    <span id="oRank"></span>
   </div>
   <div class="blink" id="retry">PRESS ENTER / TAP TO RETRY</div>
+</div>
+
+<div id="recbar">
+  <div id="recStatus"></div>
+  <div class="row">
+    <button class="recbtn hot" id="recLink" tabindex="-1">LINK RECORDS.JSON</button>
+    <button class="recbtn" id="recExport" tabindex="-1">EXPORT RECORDS.JSON</button>
+    <button class="recbtn" id="recImport" tabindex="-1">IMPORT</button>
+  </div>
 </div>
 
 <div id="pause" class="screen hidden"><div class="big" style="color:#fff">PAUSED</div><div class="blink">PRESS P TO RESUME</div></div>
@@ -730,7 +750,6 @@ let time = 40, score = 0, cpCount = 0, nextCP = 0, combo = 0, comboT = 0, bestCo
 let countdown = 0, lastCountShown = 0, propCD = 0, shake = 0, offroad = false, overT = 0, lowBeep = 0;
 let bgFar = 0, bgNear = 0, braking = false, wasBoosting = false;
 let particles = [];
-let best = 0; try { best = +localStorage.getItem('duskRunnerBest') || 0; } catch (e) {}
 const stars = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random() * 0.9, b: Math.random() }));
 
 function resetWorld() {
@@ -745,8 +764,162 @@ function resetWorld() {
 const $ = id => document.getElementById(id);
 const elHud = $('hud'), elScore = $('score'), elDist = $('dist'), elTime = $('time'), elSpeed = $('speed'), elBoost = $('boost');
 const elMsgs = $('msgs'), elStage = $('stage'), elCount = $('count'), elStageLbl = $('stagelbl'), elMute = $('mute');
-function showBestTitle() { $('bestTitle').textContent = best ? 'BEST ' + Math.floor(best).toLocaleString() : ''; }
-showBestTitle();
+
+// ================= RECORDS (records.json) =================
+// Records live in localStorage and, once the player links the game's records.json (Chrome / Edge: File System
+// Access API), are written back to that file after every run. Other browsers can export / import the file.
+const REC_KEY = 'duskRunnerRecords', TOP_N = 10;
+const MAP_FIELDS = ['bestScore', 'bestDistanceKm', 'bestCombo', 'mostCheckpoints', 'runs'];
+let idbConn = null;
+function idbOpen() {
+  // some browsers never answer IndexedDB on file:// pages; give up after a moment instead of hanging
+  return idbConn || (idbConn = new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error('IndexedDB unavailable')), 1500);
+    const r = indexedDB.open('duskRunner', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => { clearTimeout(t); res(r.result); };
+    r.onerror = () => { clearTimeout(t); rej(r.error); };
+  }).catch(e => { idbConn = null; throw e; }));
+}
+async function idbGet(k) { const db = await idbOpen(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+async function idbSet(k, v) { const db = await idbOpen(); return new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+
+const Records = {
+  data: null, handle: null, linked: false, needsPermission: false, queue: Promise.resolve(), msg: '',
+  blank() { return { game: 'Dusk Runner', version: 1, updated: null, best: null, maps: {}, topRuns: [], totals: { runs: 0, distanceKm: 0, checkpoints: 0 } }; },
+  // turn anything (old file, hand-edited file, garbage) into a valid records object
+  normalize(d) {
+    const out = this.blank(); if (!d || typeof d !== 'object') return out;
+    const num = v => (Number.isFinite(+v) ? +v : 0);
+    const run = r => (r && typeof r === 'object' ? { score: Math.floor(num(r.score)), map: String(r.map || ''), distanceKm: +num(r.distanceKm).toFixed(2),
+      checkpoints: num(r.checkpoints) | 0, bestCombo: num(r.bestCombo) | 0, date: String(r.date || '') } : null);
+    out.updated = d.updated ? String(d.updated) : null;
+    out.best = run(d.best); if (out.best && out.best.score <= 0) out.best = null;
+    if (d.maps && typeof d.maps === 'object') for (const [k, m] of Object.entries(d.maps)) {
+      if (m && typeof m === 'object') { out.maps[k] = {}; for (const f of MAP_FIELDS) out.maps[k][f] = f === 'bestDistanceKm' ? +num(m[f]).toFixed(2) : Math.floor(num(m[f])); }
+    }
+    if (Array.isArray(d.topRuns)) out.topRuns = d.topRuns.map(run).filter(r => r && r.score > 0).sort((a, b) => b.score - a.score).slice(0, TOP_N);
+    if (d.totals && typeof d.totals === 'object') for (const k in out.totals) out.totals[k] = k === 'distanceKm' ? +num(d.totals[k]).toFixed(2) : Math.floor(num(d.totals[k]));
+    return out;
+  },
+  // combine two record sets, keeping the best of each
+  merge(a, b) {
+    const o = this.blank();
+    o.updated = [a.updated, b.updated].filter(Boolean).sort().pop() || null;
+    o.best = [a.best, b.best].filter(Boolean).sort((x, y) => y.score - x.score)[0] || null;
+    for (const k of new Set([...Object.keys(a.maps), ...Object.keys(b.maps)])) {
+      const x = a.maps[k] || {}, y = b.maps[k] || {}; o.maps[k] = {};
+      for (const f of MAP_FIELDS) o.maps[k][f] = Math.max(x[f] || 0, y[f] || 0);
+    }
+    const seen = new Set();
+    o.topRuns = [...a.topRuns, ...b.topRuns].filter(r => { const id = r.date + '|' + r.score; if (seen.has(id)) return false; seen.add(id); return true; })
+      .sort((x, y) => y.score - x.score).slice(0, TOP_N);
+    for (const k in o.totals) o.totals[k] = Math.max(a.totals[k] || 0, b.totals[k] || 0);
+    return o;
+  },
+  json() { return JSON.stringify(this.data, null, 2) + '\n'; },
+  saveLocal() { try { localStorage.setItem(REC_KEY, JSON.stringify(this.data)); } catch (e) {} },
+  loadLocal() {
+    let d = null; try { d = JSON.parse(localStorage.getItem(REC_KEY)); } catch (e) {}
+    this.data = this.normalize(d);
+    let legacy = 0; try { legacy = Math.floor(+localStorage.getItem('duskRunnerBest') || 0); } catch (e) {}
+    if (legacy > (this.data.best ? this.data.best.score : 0)) this.data.best = { score: legacy, map: '', distanceKm: 0, checkpoints: 0, bestCombo: 0, date: '' };
+  },
+  supported() { return typeof window.showOpenFilePicker === 'function' && 'indexedDB' in window; },
+  async init() {
+    this.loadLocal(); this.ui();
+    // served over http(s): pick up the records.json that sits next to the game
+    if (/^https?:$/.test(location.protocol)) {
+      try { const r = await fetch('records.json', { cache: 'no-store' }); if (r.ok) this.data = this.merge(this.data, this.normalize(await r.json())); } catch (e) {}
+    }
+    if (this.supported()) { try { const h = await idbGet('recordsHandle'); if (h) { this.handle = h; await this.connect(false); } } catch (e) {} }
+    this.saveLocal(); this.ui();
+  },
+  // (re)gain read/write access to the linked file; asking needs a user gesture
+  async connect(ask) {
+    if (!this.handle) return false;
+    const opts = { mode: 'readwrite' };
+    let p = 'denied';
+    try { p = await this.handle.queryPermission(opts); if (p === 'prompt' && ask) p = await this.handle.requestPermission(opts); } catch (e) {}
+    this.linked = p === 'granted'; this.needsPermission = p === 'prompt';
+    if (this.linked) {
+      try { const txt = await (await this.handle.getFile()).text(); if (txt.trim()) this.data = this.merge(this.data, this.normalize(JSON.parse(txt))); }
+      catch (e) { /* unreadable or invalid JSON: it gets rewritten with valid records below */ }
+      this.msg = ''; this.saveLocal(); this.writeFile(); showBestTitle();
+    }
+    this.ui(); return this.linked;
+  },
+  async link() {
+    try {
+      const [h] = await window.showOpenFilePicker({ types: [{ description: 'Dusk Runner records', accept: { 'application/json': ['.json'] } }] });
+      this.handle = h; this.msg = '';
+      try { await idbSet('recordsHandle', h); } catch (e) {}
+      await this.connect(true);
+    } catch (e) { if (e && e.name !== 'AbortError') { this.msg = 'COULD NOT LINK THAT FILE'; this.ui(); } }
+  },
+  writeFile() {
+    if (!this.linked || !this.handle) return;
+    const body = this.json(), h = this.handle;
+    this.queue = this.queue
+      .then(async () => { const w = await h.createWritable(); await w.write(body); await w.close(); })
+      .catch(() => { this.linked = false; this.needsPermission = true; this.msg = 'COULD NOT SAVE · CLICK TO RECONNECT records.json'; })
+      .then(() => this.ui());
+  },
+  persist() { this.data.updated = new Date().toISOString(); this.saveLocal(); this.writeFile(); this.ui(); },
+  addRun(run) {
+    const d = this.data;
+    const m = d.maps[run.map] || (d.maps[run.map] = { bestScore: 0, bestDistanceKm: 0, bestCombo: 0, mostCheckpoints: 0, runs: 0 });
+    const newBest = run.score > 0 && (!d.best || run.score > d.best.score), newMapBest = run.score > m.bestScore;
+    if (newBest) d.best = run;
+    m.runs++; m.bestScore = Math.max(m.bestScore, run.score); m.bestDistanceKm = Math.max(m.bestDistanceKm, run.distanceKm);
+    m.bestCombo = Math.max(m.bestCombo, run.bestCombo); m.mostCheckpoints = Math.max(m.mostCheckpoints, run.checkpoints);
+    let rank = 0;
+    if (run.score > 0) { d.topRuns.push(run); d.topRuns.sort((a, b) => b.score - a.score); d.topRuns = d.topRuns.slice(0, TOP_N); rank = d.topRuns.indexOf(run) + 1; }
+    d.totals.runs++; d.totals.distanceKm = +(d.totals.distanceKm + run.distanceKm).toFixed(2); d.totals.checkpoints += run.checkpoints;
+    this.persist();
+    return { newBest, newMapBest, rank };
+  },
+  exportFile() {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([this.json()], { type: 'application/json' })); a.download = 'records.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  },
+  importFile() {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      try { this.data = this.merge(this.data, this.normalize(JSON.parse(await f.text()))); this.msg = 'IMPORTED ' + f.name.toUpperCase(); this.persist(); showBestTitle(); }
+      catch (e) { this.msg = 'THAT FILE IS NOT VALID JSON'; this.ui(); }
+    };
+    inp.click();
+  },
+  ui() {
+    const el = $('recStatus'); if (!el) return;
+    let text, cls = '';
+    if (this.msg) { text = this.msg; cls = 'warn'; }
+    else if (this.linked) { text = 'AUTO-SAVING RECORDS TO ' + this.handle.name.toUpperCase(); cls = 'ok'; }
+    else if (this.needsPermission) { text = 'CLICK OR PRESS ENTER TO RESUME SAVING TO ' + this.handle.name.toUpperCase(); cls = 'warn'; }
+    else if (this.supported()) text = 'RECORDS SAVED IN THIS BROWSER · LINK records.json TO AUTO-SAVE';
+    else text = 'RECORDS SAVED IN THIS BROWSER · EXPORT TO UPDATE records.json';
+    el.textContent = text; el.className = cls;
+    $('recLink').classList.toggle('hidden', !this.supported() || this.linked);
+    $('recLink').textContent = this.handle && !this.linked ? 'RECONNECT ' + this.handle.name.toUpperCase() : 'LINK RECORDS.JSON';
+  },
+};
+function showBestTitle() {
+  const d = Records.data, m = d && d.maps[MAPS[curMap].name], parts = [];
+  if (d && d.best) parts.push('BEST ' + d.best.score.toLocaleString());
+  if (m && m.bestScore) parts.push(MAPS[curMap].name + ' BEST ' + m.bestScore.toLocaleString());
+  $('bestTitle').textContent = parts.join(' · ');
+}
+Records.loadLocal(); showBestTitle();
+document.addEventListener('click', e => {
+  const b = e.target.closest('.recbtn'); if (!b) return;
+  b.blur();
+  if (b.id === 'recLink') { Records.handle && Records.needsPermission ? Records.connect(true) : Records.link(); }
+  else if (b.id === 'recExport') Records.exportFile();
+  else if (b.id === 'recImport') Records.importFile();
+});
 
 function toast(text, cls) {
   const d = document.createElement('div'); d.className = 'toast sh ' + (cls || ''); d.textContent = text;
@@ -765,7 +938,7 @@ function startGame() {
   state = 'play'; paused = false;
   time = 40; score = 0; cpCount = 0; nextCP = CP_SEGS * SEG; combo = 0; comboT = 0; bestCombo = 0;
   countdown = 3.2; lastCountShown = 0;
-  $('title').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden');
+  $('title').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden'); $('recbar').classList.add('off');
   elHud.classList.add('on'); $('touch').classList.add('on');
   elMsgs.innerHTML = '';
   stageBanner(1, BIOMES[mapBiome(0)].name);
@@ -784,19 +957,24 @@ function switchMap(i) {
   const fl = $('flash'); fl.style.transition = 'none'; fl.style.opacity = '0.85'; void fl.offsetWidth; fl.style.transition = 'opacity .6s'; fl.style.opacity = '0';
   Snd.whoosh();
   if (state === 'play') stageBanner(cpCount + 1, BIOMES[mapBiome(Math.floor((position + PLAYER_Z) / SEG))].name);
-  renderMapButtons();
+  renderMapButtons(); showBestTitle();
 }
 renderMapButtons();
 document.addEventListener('click', e => { const b = e.target.closest('.mapbtn'); if (b) { switchMap(+b.dataset.i); b.blur(); } });
 function gameOver() {
   state = 'over'; overT = 0; time = 0;
-  const isBest = score > best;
-  if (isBest) { best = score; try { localStorage.setItem('duskRunnerBest', String(Math.floor(best))); } catch (e) {} }
+  const res = Records.addRun({ score: Math.floor(score), map: MAPS[curMap].name, distanceKm: +(position / 18000).toFixed(2),
+    checkpoints: cpCount, bestCombo, date: new Date().toISOString() });
+  const isBest = res.newBest;
   $('oScore').textContent = Math.floor(score).toLocaleString();
   $('oDist').textContent = (position / 18000).toFixed(2) + ' KM';
   $('oCp').textContent = cpCount; $('oCombo').textContent = 'x' + bestCombo;
-  $('oBest').textContent = Math.floor(best).toLocaleString();
-  $('newbest').classList.toggle('hidden', !isBest);
+  $('oBest').textContent = (Records.data.best ? Records.data.best.score : 0).toLocaleString();
+  $('newbest').textContent = isBest ? 'NEW BEST!' : 'NEW MAP RECORD!';
+  $('newbest').classList.toggle('hidden', !isBest && !res.newMapBest);
+  $('oRank').textContent = res.rank ? `#${res.rank} OF YOUR TOP ${TOP_N} RUNS` : '';
+  showBestTitle();
+  setTimeout(() => $('recbar').classList.remove('off'), 900);
   $('retry').style.visibility = 'hidden';
   setTimeout(() => { $('over').classList.remove('hidden'); $('touch').classList.remove('on'); }, 900);
   Snd.beep(true);
@@ -819,6 +997,7 @@ const canStart = () => state === 'title' || (state === 'over' && overT > 1.6);
 addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
   if (k) { keys[k] = true; e.preventDefault(); }
+  if (Records.needsPermission && !e.repeat) Records.connect(true);
   if ((e.code === 'Enter' || e.code === 'Space') && canStart() && !e.repeat) { startGame(); return; }
   if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) togglePause();
   const dm = /^(Digit|Numpad)([1-9])$/.exec(e.code);
@@ -836,7 +1015,8 @@ function syncPointers() {
 }
 addEventListener('pointerdown', e => {
   Snd.init();
-  if (e.target.closest('#touch, .mapbtn')) return;
+  if (Records.needsPermission && state !== 'play') Records.connect(true);
+  if (e.target.closest('#touch, .mapbtn, #recbar')) return;
   if (canStart()) { startGame(); return; }
   if (paused) { togglePause(); return; }
   if (state === 'play' && e.pointerType !== 'mouse') { pointers.set(e.pointerId, e.clientX < innerWidth / 2 ? 'left' : 'right'); syncPointers(); }
@@ -1378,6 +1558,12 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+Records.init();
+// installable + offline when served over http(s); opened from a folder (file://) it is already fully offline
+if (/^https?:$/.test(location.protocol)) {
+  const mf = document.createElement('link'); mf.rel = 'manifest'; mf.href = 'manifest.webmanifest'; document.head.appendChild(mf);
+  if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 </script>
 </body>
 </html>

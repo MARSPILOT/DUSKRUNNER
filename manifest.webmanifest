@@ -1,0 +1,14 @@
+{
+  "name": "Dusk Runner",
+  "short_name": "Dusk Runner",
+  "description": "An endless pixel-art drive into the neon dusk.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#07020f",
+  "theme_color": "#07020f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
