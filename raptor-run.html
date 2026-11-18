@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Raptor Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#fff4ea;--hot:#ff6a2a;--gold:#ffd23f;--leaf:#8fe36b;--bg:#0c0306}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:'Press Start 2P',ui-monospace,monospace;color:var(--ink);touch-action:none;user-select:none;-webkit-user-select:none}
+#game{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+#scan{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+#vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(20,0,0,.6) 100%)}
+.sh{text-shadow:2px 2px 0 #000,0 0 10px rgba(255,106,42,.6)}
+#hud{position:fixed;inset:0;pointer-events:none;display:none}
+#hud.on{display:block}
+.lbl{font-size:clamp(7px,1vw,10px);color:var(--gold);letter-spacing:1px;margin-bottom:6px;text-shadow:2px 2px 0 #000}
+.val{font-size:clamp(12px,2vw,22px)}
+#tl{position:absolute;left:16px;top:16px}
+#tr{position:absolute;right:16px;top:16px;text-align:right}
+#tc{position:absolute;left:50%;top:12px;transform:translateX(-50%);text-align:center}
+#hp{font-family:system-ui,sans-serif;font-size:clamp(20px,3.6vw,36px);color:#ff3d4a;letter-spacing:4px;text-shadow:2px 2px 0 #000}
+#hp .lost{color:rgba(255,255,255,.18)}
+#hp.hit{animation:pulse .15s 4 alternate}
+@keyframes pulse{to{transform:scale(1.2)}}
+#speed small{font-size:.5em;color:#ccc}
+#bc{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);text-align:center;width:min(320px,60vw)}
+.bar{height:12px;border:2px solid #fff;background:rgba(0,0,0,.5);box-shadow:2px 2px 0 #000}
+#boost{height:100%;width:50%;background:linear-gradient(90deg,var(--gold),var(--hot));transition:width .1s}
+#boost.full{animation:glow .4s infinite alternate}
+@keyframes glow{to{filter:brightness(1.6)}}
+#msgs{position:absolute;left:50%;top:34%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px}
+.toast{font-size:clamp(9px,1.5vw,16px);animation:rise 1.4s ease-out forwards;white-space:nowrap}
+.toast.good{color:var(--leaf)}.toast.bad{color:#ff5a5a}.toast.gold{color:var(--gold)}
+@keyframes rise{0%{opacity:0;transform:translateY(10px) scale(.8)}12%{opacity:1;transform:translateY(0) scale(1.1)}20%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
+#count{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:clamp(40px,9vw,96px);color:var(--gold)}
+#mute{position:absolute;right:16px;bottom:16px;font-size:8px;color:#bbb;text-shadow:1px 1px 0 #000}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;background:linear-gradient(to bottom,rgba(12,3,6,.55),rgba(12,3,6,.1) 50%,rgba(12,3,6,.75))}
+.hidden{display:none!important}
+.logo{font-size:clamp(28px,7vw,80px);line-height:1.15;margin:0 0 14px;background:linear-gradient(180deg,#fff 0%,#ffd23f 35%,#ff6a2a 70%,#a3120c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(4px 4px 0 #2a0505) drop-shadow(0 0 18px rgba(255,106,42,.55));transform:skewX(-8deg)}
+.tag{font-size:clamp(8px,1.3vw,12px);color:var(--leaf);margin-bottom:34px;letter-spacing:2px}
+.blink{animation:blink 1s steps(2) infinite;font-size:clamp(10px,1.8vw,16px);color:var(--gold)}
+@keyframes blink{50%{opacity:0}}
+.keys{margin-top:34px;font-size:clamp(7px,1.05vw,10px);line-height:2.3;color:#f3e2d6}
+.keys b{color:var(--hot);font-weight:normal}
+.best{margin-top:22px;font-size:clamp(8px,1.1vw,11px);color:var(--gold)}
+.big{font-size:clamp(26px,6vw,64px);color:#ff4a2a;margin:0 0 24px;filter:drop-shadow(4px 4px 0 #000)}
+.stats{font-size:clamp(9px,1.4vw,14px);line-height:2.4;margin-bottom:24px}
+.stats span{color:var(--gold)}
+#newbest{color:var(--gold);animation:blink .6s steps(2) infinite}
+#touch{position:fixed;left:0;right:0;bottom:44px;display:none;justify-content:center;gap:14px;pointer-events:none}
+#touch button{pointer-events:auto;font:inherit;font-size:10px;color:#fff;background:rgba(0,0,0,.45);border:2px solid var(--leaf);padding:14px 16px;border-radius:0;box-shadow:3px 3px 0 #000;touch-action:none}
+#touch button#tBoost{border-color:var(--hot)}
+@media (pointer:coarse){#touch.on{display:flex}#bc{bottom:110px}}
+#flash{position:fixed;inset:0;pointer-events:none;background:#ff2a10;opacity:0;transition:opacity .5s}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="scan"></div><div id="vig"></div><div id="flash"></div>
+
+<div id="hud">
+  <div id="tl"><div class="lbl">SCORE</div><div id="score" class="val sh">0</div><div class="lbl" style="margin-top:12px">DISTANCE</div><div id="dist" class="val sh" style="font-size:clamp(9px,1.3vw,14px)">0.00 KM</div></div>
+  <div id="tc"><div class="lbl">HEALTH</div><div id="hp"></div></div>
+  <div id="tr"><div class="lbl">SPEED</div><div id="speed" class="val sh">0 <small>KM/H</small></div></div>
+  <div id="bc"><div class="lbl">SPRINT · SPACE</div><div class="bar"><div id="boost"></div></div></div>
+  <div id="msgs"></div>
+  <div id="count" class="sh"></div>
+  <div id="mute">M · SOUND ON</div>
+</div>
+<div id="touch"><button id="tBrake">SLOW</button><button id="tBoost">SPRINT</button></div>
+
+<div id="title" class="screen">
+  <h1 class="logo">RAPTOR<br>RUN</h1>
+  <div class="tag">THE MOUNTAIN IS AWAKE · RIDE FOR YOUR LIFE</div>
+  <div class="blink">PRESS ENTER / TAP TO RIDE</div>
+  <div class="keys">
+    <b>← →</b> / <b>A D</b> STEER &nbsp; <b>↓</b> / <b>S</b> SLOW &nbsp; <b>SPACE</b> / <b>↑</b> SPRINT<br>
+    <b>RED RINGS</b> MARK WHERE VOLCANIC BOMBS WILL LAND<br>
+    SKIM PAST <b>MOLTEN ROCKS</b> FOR NEAR MISSES · KEEP OUT OF THE TREES<br>
+    <b>P</b> PAUSE · <b>M</b> MUTE · TOUCH: TAP LEFT / RIGHT HALF TO STEER
+  </div>
+  <div class="best" id="bestTitle"></div>
+</div>
+
+<div id="over" class="screen hidden">
+  <div class="big">EXTINCT</div>
+  <div class="stats">
+    SCORE <span id="oScore">0</span><br>
+    DISTANCE <span id="oDist">0</span><br>
+    BOMBS DODGED <span id="oDodged">0</span> · BEST COMBO <span id="oCombo">0</span><br>
+    BEST <span id="oBest">0</span> <span id="newbest" class="hidden">NEW BEST!</span>
+  </div>
+  <div class="blink" id="retry">PRESS ENTER / TAP TO RIDE AGAIN</div>
+</div>
+
+<div id="pause" class="screen hidden"><div class="big" style="color:#fff">PAUSED</div><div class="blink">PRESS P TO RESUME</div></div>
+
+<script>
+'use strict';
+// ================= CANVAS =================
+const cvs = document.getElementById('game'), ctx = cvs.getContext('2d');
+let W = 480, H = 270, K = 135;
+function resize() {
+  H = 270;
+  W = Math.round(Math.min(720, Math.max(300, H * innerWidth / innerHeight)));
+  cvs.width = W; cvs.height = H; K = H / 2;
+  ctx.imageSmoothingEnabled = false;
+}
+addEventListener('resize', resize); resize();
+
+// ================= CONSTANTS =================
+const SEG = 200, ROAD_W = 2000, RUMBLE = 3, DRAW = 260, CAM_H = 1000, FOV = 100;
+const CAM_DEPTH = 1 / Math.tan((FOV / 2) * Math.PI / 180);
+const PLAYER_Z = CAM_H * CAM_DEPTH;
+const MAX_SPEED = SEG * 60;
+const ACCEL = MAX_SPEED / 5, BRAKE = -MAX_SPEED * 1.1, DECEL = -MAX_SPEED / 5;
+const OFFROAD_DECEL = -MAX_SPEED / 1.6, OFFROAD_LIMIT = MAX_SPEED / 4, CENTRIFUGAL = 0.3;
+const BOOST_MUL = 1.38, FOG_DENSITY = 4.2;
+const RAPTOR_W = 580, PLAYER_W = RAPTOR_W / ROAD_W;
+const ROCK_W = 620, BOMB_W = 520, KM = 18000, MAX_HP = 3, HEAL_EVERY = KM * 2.5;
+const LANE_X = [-0.62, 0, 0.62];
+
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.random() * a.length | 0];
+const easeIn = (a, b, p) => a + (b - a) * p * p;
+const easeInOut = (a, b, p) => a + (b - a) * ((-Math.cos(p * Math.PI) / 2) + 0.5);
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+const noise = v => Math.sin(v) * 0.5 + Math.sin(v * 2.3 + 1.7) * 0.3 + Math.sin(v * 5.1 + 0.4) * 0.2;
+const wrapX = (x, span) => ((x % span) + span) % span;
+
+// volcanic floor (road), scorched ash edge (rumble), forest floor (grass)
+const SEGCOL = [
+  { grass: '#1c381d', road: '#2a2321', rumble: '#3d322d' },
+  { grass: '#183219', road: '#25201e', rumble: '#352b27' },
+];
+const FOG = '#3a1c18';
+
+// ================= SPRITES =================
+function mk(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  draw(g, (x, y, ww, hh, col) => { g.fillStyle = col; g.fillRect(x, y, ww, hh); });
+  return c;
+}
+const SPR = {};
+const addSpr = (key, img, w, hit = 0.5) => (SPR[key] = Array.isArray(img) ? { img: img[0], frames: img, w, hit } : { img, w, hit });
+const ell = (r, cx, cy, rx, ry, col) => { for (let y = -ry; y <= ry; y++) { const hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry)))); r(cx - hw, cy + y, hw * 2, 1, col); } };
+function glow(g, x, y, rad, rgbStr, a) {
+  const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+  gr.addColorStop(0, `rgba(${rgbStr},${a})`); gr.addColorStop(1, `rgba(${rgbStr},0)`);
+  g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+}
+
+// rear view of a feathered velociraptor with its rider; f = run-cycle frame 0..3
+function raptorImg(lean, f) {
+  return mk(48, 62, (g, r) => {
+    g.translate(0, 4);
+    const SK = '#6b8a3a', DK = '#425e25', ST = '#2f4519', FE = '#e0602b', FE2 = '#ffb347', CL = '#efe6cc';
+    ell(r, 24, 55, 17, 2, 'rgba(0,0,0,0.35)');
+    // legs: [left, right] lift in px
+    const lift = [[0, 3], [0, 8], [3, 0], [8, 0]][f];
+    for (const sx of [-1, 1]) {
+      const up = lift[sx < 0 ? 0 : 1], hx = 24 + sx * 9, footY = 54 - up;
+      ell(r, hx, 39, 5, 6, SK);
+      r(hx - 4 * sx - (sx < 0 ? 0 : 1), 36, 1, 6, '#86a650');
+      r(hx - 2 + sx, 44, 4, footY - 44, DK);
+      r(hx - 3 + sx, footY - 2, 7, 2, DK);
+      r(hx - 3 + sx, footY, 1, 1, CL); r(hx + sx, footY, 1, 1, CL); r(hx + 3 + sx, footY, 1, 1, CL);
+      r(hx - sx * 3, footY - 4, 1, 2, CL); // sickle claw
+    }
+    // body
+    const bx = 24 + lean;
+    ell(r, bx, 31, 12, 9, SK);
+    ell(r, bx, 36, 9, 3, DK);
+    for (const y of [24, 27, 30, 33]) for (let x = bx - 9 + (y % 2); x < bx + 9; x += 4) r(x, y, 2, 1, ST);
+    // tiny feathered arms
+    r(bx - 14, 29, 3, 2, SK); r(bx - 15, 31, 1, 2, CL); r(bx - 14, 28, 2, 1, FE);
+    r(bx + 11, 29, 3, 2, SK); r(bx + 14, 31, 1, 2, CL); r(bx + 12, 28, 2, 1, FE);
+    // neck + back of the head, crest of feathers
+    const hx = 24 + lean * 4;
+    r(hx - 3, 4, 6, 20, SK);
+    ell(r, hx, 2, 5, 4, SK); ell(r, hx, 4, 4, 2, DK);
+    r(hx - 6, 1, 1, 2, '#ffd23f'); r(hx + 5, 1, 1, 2, '#ffd23f'); // eyes, seen from behind
+    for (let i = -3; i <= 3; i += 2) r(hx + i, -4 + (Math.abs(i) >> 1), 1, 3, Math.abs(i) === 1 ? FE2 : FE);
+    // tail coming back toward the camera, swaying
+    const sway = [0, 1, 0, -1][f] - lean * 2;
+    for (let y = 36; y < 54; y++) {
+      const t = (y - 36) / 18, hw = Math.max(1, Math.round(5 * (1 - t) + 1)), x = Math.round(24 + sway * t * 2);
+      r(x - hw, y, hw * 2, 1, y % 4 === 0 ? ST : SK);
+    }
+    const tx = Math.round(24 + sway * 2);
+    r(tx - 3, 52, 1, 3, FE); r(tx - 1, 53, 1, 4, FE2); r(tx + 1, 53, 1, 4, FE2); r(tx + 2, 52, 1, 3, FE);
+    // rider
+    const rx = 24 + lean * 2, J = '#ff3f8e', JD = '#b02a62', P = '#2a2a40';
+    r(rx - 11, 24, 4, 8, P); r(rx + 7, 24, 4, 8, P);
+    r(rx - 11, 31, 4, 2, '#111'); r(rx + 7, 31, 4, 2, '#111');
+    r(rx - 6, 13, 12, 12, J); r(rx + 3, 13, 3, 10, JD); r(rx - 1, 14, 2, 8, '#ffd23f'); r(rx - 6, 22, 12, 2, '#111');
+    r(rx - 9, 15, 3, 7, J); r(rx + 6, 15, 3, 7, JD); r(rx - 9, 21, 3, 2, '#e8b890'); r(rx + 6, 21, 3, 2, '#e8b890');
+    r(rx - 4, 6, 8, 8, '#eeeef6'); r(rx - 1, 6, 2, 8, J); r(rx - 4, 12, 8, 2, '#c9c9da');
+    const fl = [0, 1, 0, -1][f];
+    r(rx + 3, 13, 4, 2, '#ffd23f'); r(rx + 6, 12 + fl, 4, 2, '#ffd23f'); r(rx + 9, 13 - fl, 3, 1, '#ffd23f');
+  });
+}
+
+// side-view pterodactyl facing left; f = wing frame 0 up, 1 level, 2 down
+function pteroImg(f, pal, eye) {
+  return mk(46, 24, (g, r) => {
+    const tipY = [1, 10, 20][f], sh = 11;
+    g.fillStyle = pal[1];
+    g.beginPath(); g.moveTo(17, sh); g.lineTo(2, tipY); g.lineTo(10, sh + 2); g.lineTo(20, sh + 3); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(27, sh); g.lineTo(44, tipY); g.lineTo(36, sh + 2); g.lineTo(26, sh + 3); g.closePath(); g.fill();
+    g.strokeStyle = pal[2]; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(18, sh); g.lineTo(2, tipY); g.moveTo(26, sh); g.lineTo(44, tipY); g.stroke();
+    ell(r, 22, 12, 6, 2, pal[0]);
+    r(14, 10, 4, 2, pal[0]);
+    ell(r, 13, 10, 3, 2, pal[0]);
+    r(3, 10, 8, 1, pal[0]); r(5, 11, 5, 1, pal[2]);
+    r(15, 7, 4, 1, pal[3]); r(18, 6, 3, 1, pal[3]); r(15, 8, 2, 1, pal[3]);
+    r(28, 12, 4, 1, pal[0]); r(23, 14, 1, 2, pal[2]); r(25, 14, 1, 2, pal[2]);
+    if (eye) r(12, 9, 1, 1, '#ffd23f');
+  });
+}
+const PTERO_SIL = [0, 1, 2, 1].map(f => pteroImg(f, ['#1c0a0c', '#1c0a0c', '#12050a', '#1c0a0c'], false));
+
+function boulderImg(f) {
+  return mk(30, 22, (g, r) => {
+    glow(g, 15, 14, 15, '255,110,30', 0.3 + f * 0.1);
+    ell(r, 15, 14, 13, 7, '#2a1a16'); ell(r, 13, 12, 10, 5, '#3a2420'); ell(r, 11, 10, 4, 2, '#4e302a');
+    const C = ['#ff6a1a', '#ffb347', '#ffe28a'][f];
+    r(6, 14, 5, 1, C); r(10, 15, 1, 2, C); r(14, 11, 1, 4, C); r(15, 15, 6, 1, C); r(20, 12, 1, 3, C); r(8, 18, 4, 1, C); r(18, 18, 5, 1, C);
+    r(4, 20, 22, 2, 'rgba(0,0,0,0.4)');
+  });
+}
+
+function buildSprites() {
+  const PL = {};
+  for (const lean of [-1, 0, 1]) for (let f = 0; f < 4; f++) PL[lean + ':' + f] = raptorImg(lean, f);
+  SPR.player = PL;
+
+  addSpr('araucaria', mk(40, 84, (g, r) => {
+    r(19, 18, 3, 66, '#4a2f1c'); r(19, 18, 1, 66, '#6b4528');
+    for (const [y, hw] of [[5, 7], [11, 13], [18, 18], [26, 16], [33, 11]]) {
+      ell(r, 20, y, hw, 3, '#1f4a2a'); ell(r, 20, y - 1, Math.max(1, hw - 2), 2, '#2d6a3a');
+      for (let x = -hw + 2; x < hw - 1; x += 3) r(20 + x, y - 2, 1, 1, '#4f9a55');
+    }
+  }), 1500, 0.2);
+
+  addSpr('conifer', mk(34, 90, (g, r) => {
+    r(15, 72, 4, 18, '#3e2716');
+    for (let i = 0; i < 5; i++) {
+      const top = 2 + i * 14, hgt = 20, mh = 4 + i * 2.8;
+      for (let y = 0; y < hgt; y++) { const hw = Math.round(1 + (y / hgt) * mh); r(17 - hw, top + y, hw * 2, 1, y % 4 === 0 ? '#245a2c' : (i % 2 ? '#173f20' : '#1a4723')); }
+    }
+  }), 1300, 0.25);
+
+  addSpr('treefern', mk(36, 50, (g, r) => {
+    for (let i = 0; i < 32; i++) { const x = 16 + Math.round(Math.sin(i / 32 * 1.2) * 3); r(x, 49 - i, 3, 1, i % 3 ? '#4a3320' : '#5e4229'); }
+    const cx = 19, cy = 18;
+    for (const a of [-3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0, 2.8, 0.4]) for (let t = 0; t < 16; t++) {
+      const px = Math.round(cx + Math.cos(a) * t), py = Math.round(cy + Math.sin(a) * t * 0.6 + t * t * 0.05);
+      r(px, py, 2, 1, '#2f7a3a');
+      if (t % 2 === 0 && t > 2) { r(px, py + 1, 1, 2, '#3f9a48'); r(px + 1, py - 1, 1, 1, '#4fb058'); }
+    }
+  }), 850, 0.25);
+
+  addSpr('cycad', mk(30, 22, (g, r) => {
+    r(12, 12, 6, 10, '#6b4a2a'); for (let y = 13; y < 22; y += 2) r(12 + (y % 4 ? 0 : 1), y, 5, 1, '#4e341c');
+    for (const a of [-2.9, -2.5, -2.1, -1.7, -1.4, -1.0, -0.6, -0.25]) for (let t = 0; t < 13; t++) {
+      r(Math.round(15 + Math.cos(a) * t), Math.round(12 + Math.sin(a) * t * 0.9 + t * t * 0.045), 2, 1, t % 3 ? '#3a8a3a' : '#5ab050');
+    }
+  }), 560, 0.5);
+
+  addSpr('fern', mk(22, 12, (g, r) => {
+    for (const a of [-2.8, -2.3, -1.9, -1.5, -1.1, -0.7, -0.3]) for (let t = 0; t < 10; t++) {
+      r(Math.round(11 + Math.cos(a) * t), Math.round(11 + Math.sin(a) * t * 0.8 + t * t * 0.05), 1, 1, t % 2 ? '#2f7a3a' : '#4f9a48');
+    }
+  }), 380, 0.3);
+
+  addSpr('dead', mk(24, 56, (g, r) => {
+    for (let y = 8; y < 56; y++) { const hw = Math.round(1 + (y / 56) * 2.5); r(12 - hw, y, hw * 2, 1, '#1a1210'); }
+    for (const [x0, y0, dx, dy, n] of [[12, 22, -1, -1, 8], [12, 16, 1, -1, 7], [12, 30, 1, -0.6, 9], [12, 36, -1, -0.5, 7], [12, 10, -0.4, -1, 6]]) {
+      for (let i = 0; i < n; i++) r(Math.round(x0 + dx * i), Math.round(y0 + dy * i), 1, 1, '#1f1513');
+    }
+    for (const [x, y] of [[11, 40], [13, 28], [10, 48], [12, 19]]) { r(x, y, 1, 1, '#ff7a2a'); r(x + 1, y + 1, 1, 1, '#b03a12'); }
+  }), 700, 0.25);
+
+  addSpr('ptero', [0, 1, 2, 1].map(f => pteroImg(f, ['#8a4a30', '#7a3a2a', '#4e2419', '#d0602b'], true)), 1500);
+  addSpr('boulder', [0, 1, 2, 1].map(boulderImg), ROCK_W, 0.85);
+  addSpr('bomb', mk(16, 16, (g, r) => {
+    glow(g, 8, 8, 8, '255,140,40', 0.8);
+    ell(r, 8, 8, 5, 5, '#ff6a1a'); ell(r, 7, 7, 3, 3, '#ffd23f'); r(6, 6, 2, 2, '#fff8d0');
+    r(9, 10, 3, 2, '#3a1a10'); r(4, 9, 2, 2, '#3a1a10'); r(10, 5, 2, 1, '#3a1a10');
+  }), BOMB_W);
+}
+buildSprites();
+
+// ================= AUDIO =================
+const Snd = {
+  ac: null, master: null, music: null, sfx: null, muted: false, noise: null, curve: null, step: 0, next: 0, nextCry: 0,
+  init() {
+    if (this.ac) { if (this.ac.state === 'suspended' && !paused) this.ac.resume(); return; }
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      const ac = this.ac = new AC();
+      this.master = ac.createGain(); this.master.gain.value = this.muted ? 0 : 0.6; this.master.connect(ac.destination);
+      this.music = ac.createGain(); this.music.gain.value = 0.28; this.music.connect(this.master);
+      this.sfx = ac.createGain(); this.sfx.gain.value = 0.8; this.sfx.connect(this.master);
+      const buf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      this.noise = buf;
+      const c = new Float32Array(256);
+      for (let i = 0; i < 256; i++) { const x = i / 128 - 1; c[i] = Math.tanh(x * 6); }
+      this.curve = c;
+      this.next = ac.currentTime + 0.1; this.nextCry = ac.currentTime + 1.5;
+      setInterval(() => this.schedule(), 25);
+    } catch (e) { this.ac = null; }
+  },
+  schedule() {
+    const ac = this.ac; if (!ac || ac.state !== 'running') return;
+    const spb = 60 / 124 / 4;
+    if (this.next < ac.currentTime) this.next = ac.currentTime + 0.05;
+    while (this.next < ac.currentTime + 0.12) { this.playStep(this.step, this.next); this.next += spb; this.step++; }
+  },
+  playStep(s, t) {
+    const CH = [[45, 48, 52], [41, 45, 48], [43, 47, 50], [40, 44, 47]];
+    const bar = Math.floor(s / 16) % 4, ch = CH[bar], q = s % 16;
+    if (q % 2 === 0) this.tone('sawtooth', mtof(ch[0] - 12 + (q % 4 === 2 ? 12 : 0)), t, 0.17, 0.12, 420);
+    const arp = [0, 1, 2, 1, 0, 2, 1, 2];
+    if (Math.floor(s / 64) % 2) this.tone('square', mtof(ch[arp[q % 8]] + 24), t, 0.08, 0.018, 2200);
+    if (q % 4 === 0) this.kick(t);
+    if (q % 2 === 1) this.noiseHit(t, 0.03, 0.03, 'highpass', 8000);
+    if (q === 4 || q === 12) this.noiseHit(t, 0.14, 0.1, 'bandpass', 1500);
+    if (q === 6 || q === 14) this.tom(t, 110);
+    if (q === 15 && bar % 2) { this.tom(t, 82); }
+  },
+  tone(type, freq, t, dur, vol, cut, dest) {
+    const ac = this.ac, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    let node = o;
+    if (cut) { const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; o.connect(f); node = f; }
+    node.connect(g); g.connect(dest || this.music);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur + 0.05);
+  },
+  sweep(f0, f1, t, dur, vol, dest) {
+    const ac = this.ac, o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur + 0.1);
+  },
+  kick(t) { this.sweep(140, 40, t, 0.14, 0.32, this.music); },
+  tom(t, f) { this.sweep(f * 1.6, f, t, 0.22, 0.22, this.music); },
+  noiseHit(t, dur, vol, type, freq, dest) {
+    const ac = this.ac, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = this.noise; f.type = type; f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(dest || this.music); s.start(t, Math.random() * 0.4); s.stop(t + dur + 0.02);
+  },
+  ok() { return this.ac && this.ac.state === 'running'; },
+  // the raptor's voice: two detuned, distorted oscillators with a fast vibrato, swept up then down, plus breathy rasp
+  shriek(pitch, dur, vol, t0) {
+    if (!this.ok()) return;
+    const ac = this.ac, t = t0 || ac.currentTime;
+    const o1 = ac.createOscillator(), o2 = ac.createOscillator(), lfo = ac.createOscillator(), lg = ac.createGain();
+    const ws = ac.createWaveShaper(), bp = ac.createBiquadFilter(), g = ac.createGain(), g2 = ac.createGain();
+    o1.type = 'sawtooth'; o2.type = 'square';
+    const f0 = 650 * pitch, fp = 2100 * pitch, fe = 520 * pitch;
+    for (const [o, m] of [[o1, 1], [o2, 1.49]]) {
+      o.frequency.setValueAtTime(f0 * m, t);
+      o.frequency.exponentialRampToValueAtTime(fp * m, t + Math.min(0.08, dur * 0.25));
+      o.frequency.exponentialRampToValueAtTime(fe * m, t + dur);
+    }
+    lfo.frequency.value = rnd(28, 44); lg.gain.value = 160 * pitch;
+    lfo.connect(lg); lg.connect(o1.frequency); lg.connect(o2.frequency);
+    ws.curve = this.curve;
+    bp.type = 'bandpass'; bp.Q.value = 1.3;
+    bp.frequency.setValueAtTime(2600 * pitch, t); bp.frequency.exponentialRampToValueAtTime(1100 * pitch, t + dur);
+    g2.gain.value = 0.5;
+    o1.connect(ws); o2.connect(g2); g2.connect(ws); ws.connect(bp); bp.connect(g); g.connect(this.sfx);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.025);
+    g.gain.setValueAtTime(vol * 0.8, t + dur * 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    for (const o of [o1, o2, lfo]) { o.start(t); o.stop(t + dur + 0.05); }
+    this.noiseHit(t, dur * 0.7, vol * 0.35, 'bandpass', 3400 * pitch, this.sfx);
+  },
+  chirp() {
+    if (!this.ok()) return;
+    const t = this.ac.currentTime, n = 2 + (Math.random() * 2 | 0), p = rnd(1.15, 1.45);
+    for (let i = 0; i < n; i++) this.shriek(p * rnd(0.95, 1.05), 0.09, 0.14, t + i * 0.12);
+  },
+  voice(pct, on) {
+    if (!this.ok() || !on) return;
+    const t = this.ac.currentTime; if (t < this.nextCry) return;
+    this.nextCry = t + lerp(3.4, 1.3, clamp(pct, 0, 1)) * rnd(0.7, 1.35);
+    if (Math.random() < 0.35) this.chirp(); else this.shriek(rnd(0.88, 1.15), rnd(0.35, 0.6), 0.2);
+  },
+  sprintCry() { this.shriek(1.15, 0.65, 0.3); if (this.ac) this.nextCry = this.ac.currentTime + 1.5; },
+  hurtCry() { this.shriek(0.72, 0.75, 0.32); if (this.ac) this.nextCry = this.ac.currentTime + 1.5; },
+  footstep(vol) { if (!this.ok() || vol < 0.02) return; const t = this.ac.currentTime; this.sweep(120, 42, t, 0.08, 0.16 * vol, this.sfx); this.noiseHit(t, 0.05, 0.05 * vol, 'lowpass', 500, this.sfx); },
+  boom(vol) { if (!this.ok()) return; const t = this.ac.currentTime; this.noiseHit(t, 0.9, 0.7 * vol, 'lowpass', 700, this.sfx); this.sweep(70, 28, t, 0.6, 0.55 * vol, this.sfx); },
+  launch() { if (!this.ok()) return; this.sweep(55, 30, this.ac.currentTime, 0.5, 0.1, this.sfx); },
+  whistle() { if (!this.ok()) return; const t = this.ac.currentTime, o = this.ac.createOscillator(), g = this.ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(1900, t); o.frequency.exponentialRampToValueAtTime(420, t + 0.9); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.95); o.connect(g); g.connect(this.sfx); o.start(t); o.stop(t + 1); },
+  blip(n) { if (!this.ok()) return; const t = this.ac.currentTime, b = 76 + Math.min(n, 8); this.tone('square', mtof(b), t, 0.07, 0.07, 0, this.sfx); this.tone('square', mtof(b + 7), t + 0.06, 0.12, 0.07, 0, this.sfx); },
+  chime() { if (!this.ok()) return; const t = this.ac.currentTime; [72, 76, 79, 84].forEach((m, i) => this.tone('triangle', mtof(m), t + i * 0.07, 0.3, 0.16, 0, this.sfx)); },
+  beep(hi) { if (!this.ok()) return; this.tone('square', hi ? 1320 : 660, this.ac.currentTime, hi ? 0.4 : 0.14, 0.08, 0, this.sfx); },
+  toggleMute() { this.muted = !this.muted; if (this.master) this.master.gain.value = this.muted ? 0 : 0.6; }
+};
+
+// ================= WORLD =================
+let segments = [], pruneIdx = 0;
+const findSegment = z => segments[Math.floor(z / SEG)];
+const lastY = () => segments.length ? segments[segments.length - 1].p2.world.y : 0;
+function addSegment(curve, y) {
+  const n = segments.length;
+  segments.push({
+    index: n, curve, sprites: [], clip: 0, fog: 1, vis: 0,
+    edge: 0.14 + 0.1 * noise(n * 0.11), // wobbly ash edge where the forest begins
+    p1: { world: { y: lastY(), z: n * SEG }, camera: {}, screen: {} },
+    p2: { world: { y, z: (n + 1) * SEG }, camera: {}, screen: {} },
+  });
+}
+function addRoad(enter, hold, leave, curve, height) {
+  const startY = lastY(), endY = startY + height * SEG, total = enter + hold + leave;
+  for (let n = 0; n < enter; n++) addSegment(easeIn(0, curve, n / enter), easeInOut(startY, endY, n / total));
+  for (let n = 0; n < hold; n++) addSegment(curve, easeInOut(startY, endY, (enter + n) / total));
+  for (let n = 0; n < leave; n++) addSegment(easeInOut(curve, 0, n / leave), easeInOut(startY, endY, (enter + hold + n) / total));
+}
+function generateSection() {
+  const start = segments.length, d = Math.min(1, start / 25000);
+  const len = pick([25, 40, 60, 80]);
+  let curve = 0, hill = 0;
+  if (Math.random() > 0.2) curve = (Math.random() < 0.5 ? -1 : 1) * rnd(1.5, 3 + 3 * d);
+  if (Math.random() < 0.6) {
+    const y = lastY() / SEG;
+    hill = rnd(10, 30 + 25 * d) * (y > 60 ? -1 : y < -60 ? 1 : (Math.random() < 0.5 ? -1 : 1));
+  }
+  const e = Math.round(len * rnd(0.3, 0.7));
+  addRoad(e, len, e, curve, hill);
+  decorate(start, segments.length);
+}
+const FOREST = ['araucaria', 'araucaria', 'conifer', 'conifer', 'conifer', 'treefern', 'treefern', 'cycad', 'cycad', 'fern', 'dead'];
+const PROPS = {
+  araucaria: { off: [1.45, 7] }, conifer: { off: [1.35, 7] }, treefern: { off: [1.3, 5] },
+  cycad: { off: [1.2, 3] }, fern: { off: [1.15, 2.2] }, dead: { off: [1.15, 1.8] },
+};
+function decorate(from, to) {
+  for (let i = from; i < to; i++) {
+    const s = segments[i];
+    for (const side of [-1, 1]) for (let k = 0; k < 2; k++) {
+      if (Math.random() > 0.6) continue;
+      const key = pick(FOREST), cfg = PROPS[key];
+      s.sprites.push({ key, offset: side * rnd(cfg.off[0], cfg.off[1]) });
+    }
+    if (Math.random() < 0.014) {
+      const over = Math.random() < 0.3;
+      s.sprites.push({ key: 'ptero', float: true, nc: true, offset: over ? rnd(-0.9, 0.9) : pick([-1, 1]) * rnd(1.6, 6),
+        alt: over ? rnd(2600, 3600) : rnd(1700, 3400), bob: 200, drift: 0.6, ph: Math.random() * 6.28 });
+    }
+  }
+}
+function ensureGenerated(z) { while (segments.length * SEG < z) generateSection(); }
+
+// ================= STATE =================
+let state = 'title', paused = false;
+let position = 0, playerX = 0, speed = 0, steer = 0, boosting = false, boost = 0.5;
+let score = 0, hp = MAX_HP, invuln = 0, dodged = 0, combo = 0, comboT = 0, bestCombo = 0, nextHeal = HEAL_EVERY;
+let countdown = 0, lastCountShown = 0, propCD = 0, shake = 0, offroad = false, overT = 0;
+let bgFar = 0, bgNear = 0, braking = false, wasBoosting = false, runPhase = 0, lastFrame = 0, frameNo = 0;
+let particles = [], bombs = [], rocks = [], explosions = [], ejecta = [], bombT = 1.5, erupt = 0;
+const volc = { x: 0, y: 0 };
+let best = 0; try { best = +localStorage.getItem('raptorRunBest') || 0; } catch (e) {}
+const ash = Array.from({ length: 80 }, () => ({ x: Math.random(), y: Math.random(), s: Math.random(), e: Math.random() < 0.3 }));
+const flock = Array.from({ length: 7 }, () => ({ x: Math.random(), y: rnd(0.06, 0.3), v: rnd(0.008, 0.025), dir: pick([-1, 1]), s: rnd(0.35, 0.9), ph: Math.random() * 6 }));
+
+function resetWorld() {
+  segments = []; pruneIdx = 0; particles = []; bombs = []; rocks = []; explosions = []; ejecta = [];
+  for (let i = 0; i < 60; i++) addSegment(0, 0);
+  decorate(0, 60);
+  ensureGenerated((DRAW + 80) * SEG);
+  position = 0; playerX = 0; speed = 0; boost = 0.5; steer = 0; bombT = 1.5;
+}
+
+const $ = id => document.getElementById(id);
+const elHud = $('hud'), elScore = $('score'), elDist = $('dist'), elHp = $('hp'), elSpeed = $('speed'), elBoost = $('boost');
+const elMsgs = $('msgs'), elCount = $('count'), elMute = $('mute');
+function showBestTitle() { $('bestTitle').textContent = best ? 'BEST ' + Math.floor(best).toLocaleString() : ''; }
+showBestTitle();
+
+function toast(text, cls) {
+  const d = document.createElement('div'); d.className = 'toast sh ' + (cls || ''); d.textContent = text;
+  elMsgs.appendChild(d); setTimeout(() => d.remove(), 1400);
+  while (elMsgs.children.length > 4) elMsgs.firstChild.remove();
+}
+function flash(a) { const fl = $('flash'); fl.style.transition = 'none'; fl.style.opacity = String(a); void fl.offsetWidth; fl.style.transition = 'opacity .6s'; fl.style.opacity = '0'; }
+
+function startGame() {
+  Snd.init();
+  resetWorld();
+  state = 'play'; paused = false;
+  score = 0; hp = MAX_HP; invuln = 0; dodged = 0; combo = 0; comboT = 0; bestCombo = 0; nextHeal = HEAL_EVERY;
+  countdown = 3.2; lastCountShown = 0;
+  $('title').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden');
+  elHud.classList.add('on'); $('touch').classList.add('on');
+  elMsgs.innerHTML = '';
+  if (Snd.ac) Snd.nextCry = Snd.ac.currentTime + 4;
+}
+function gameOver() {
+  state = 'over'; overT = 0;
+  const isBest = score > best;
+  if (isBest) { best = score; try { localStorage.setItem('raptorRunBest', String(Math.floor(best))); } catch (e) {} }
+  $('oScore').textContent = Math.floor(score).toLocaleString();
+  $('oDist').textContent = (position / KM).toFixed(2) + ' KM';
+  $('oDodged').textContent = dodged; $('oCombo').textContent = 'x' + bestCombo;
+  $('oBest').textContent = Math.floor(best).toLocaleString();
+  $('newbest').classList.toggle('hidden', !isBest);
+  $('retry').style.visibility = 'hidden';
+  setTimeout(() => { $('over').classList.remove('hidden'); $('touch').classList.remove('on'); }, 900);
+}
+function togglePause() {
+  if (state !== 'play') return;
+  paused = !paused;
+  $('pause').classList.toggle('hidden', !paused);
+  if (Snd.ac) paused ? Snd.ac.suspend() : Snd.ac.resume();
+}
+
+// ================= INPUT =================
+const keys = { left: false, right: false, brake: false, boost: false };
+const touch = { left: false, right: false, brake: false, boost: false };
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowDown: 'brake', KeyS: 'brake',
+  Space: 'boost', ShiftLeft: 'boost', ShiftRight: 'boost', ArrowUp: 'boost', KeyW: 'boost' };
+const inp = k => keys[k] || touch[k];
+const canStart = () => state === 'title' || (state === 'over' && overT > 1.6);
+
+addEventListener('keydown', e => {
+  const k = KEYMAP[e.code];
+  if (k) { keys[k] = true; e.preventDefault(); }
+  if ((e.code === 'Enter' || e.code === 'Space') && canStart() && !e.repeat) { startGame(); return; }
+  if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) togglePause();
+  if (e.code === 'KeyM' && !e.repeat) { Snd.toggleMute(); elMute.textContent = 'M · SOUND ' + (Snd.muted ? 'OFF' : 'ON'); }
+  Snd.init();
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play' && !paused) togglePause(); });
+
+const pointers = new Map();
+function syncPointers() { touch.left = touch.right = false; for (const z of pointers.values()) touch[z] = true; }
+addEventListener('pointerdown', e => {
+  Snd.init();
+  if (e.target.closest('#touch')) return;
+  if (canStart()) { startGame(); return; }
+  if (paused) { togglePause(); return; }
+  if (state === 'play' && e.pointerType !== 'mouse') { pointers.set(e.pointerId, e.clientX < innerWidth / 2 ? 'left' : 'right'); syncPointers(); }
+});
+addEventListener('pointermove', e => { if (pointers.has(e.pointerId)) { pointers.set(e.pointerId, e.clientX < innerWidth / 2 ? 'left' : 'right'); syncPointers(); } });
+const endPtr = e => { if (pointers.delete(e.pointerId)) syncPointers(); };
+addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
+for (const [id, k] of [['tBoost', 'boost'], ['tBrake', 'brake']]) {
+  const b = $(id);
+  b.addEventListener('pointerdown', e => { e.preventDefault(); touch[k] = true; b.setPointerCapture(e.pointerId); });
+  b.addEventListener('pointerup', () => { touch[k] = false; });
+  b.addEventListener('pointercancel', () => { touch[k] = false; });
+}
+
+// ================= UPDATE =================
+function autopilotTarget() {
+  const front = position + PLAYER_Z; let bestLane = 0, bestScore = -1e9;
+  for (const lane of LANE_X) {
+    let sc = -Math.abs(lane - playerX) * 1.5;
+    for (const r of rocks) { const rel = r.z - front; if (rel > -SEG && rel < SEG * 40 && Math.abs(r.offset - lane) < 0.45) sc -= (42 * SEG - rel) / SEG; }
+    for (const b of bombs) { const rel = b.landZ - front; if (rel > -SEG * 2 && rel < SEG * 60 && Math.abs(b.offset - lane) < 0.5) sc -= 30; }
+    if (sc > bestScore) { bestScore = sc; bestLane = lane; }
+  }
+  return bestLane;
+}
+function emit(x, y, n, col, spread, vy, life, size) {
+  for (let i = 0; i < n; i++) particles.push({ x, y, vx: rnd(-spread, spread), vy: vy + rnd(-20, 20), life, max: life, col: pick(col), s: size || 2 });
+}
+function projObj(z, offset, alt) {
+  const seg = findSegment(z); if (!seg || seg.vis !== frameNo) return null;
+  const pc = (z % SEG) / SEG, sc = lerp(seg.p1.screen.scale, seg.p2.screen.scale, pc);
+  return { seg, sc, camZ: z - position,
+    x: lerp(seg.p1.screen.x, seg.p2.screen.x, pc) + sc * offset * ROAD_W * K,
+    y: lerp(seg.p1.screen.y, seg.p2.screen.y, pc) - alt * sc * K };
+}
+
+function spawnBomb(front) {
+  const T = rnd(1.6, 2.4), roll = Math.random();
+  let landZ, offset;
+  if (roll < 0.55) { // aimed: lands about where the player will be
+    landZ = front + Math.max(speed, MAX_SPEED * 0.3) * T * rnd(0.85, 1.1);
+    offset = clamp(playerX + rnd(-0.15, 0.15), -0.95, 0.95);
+  } else if (roll < 0.85) {
+    landZ = front + rnd(SEG * 15, SEG * DRAW * 0.75); offset = rnd(-0.95, 0.95);
+  } else { // into the trees
+    landZ = front + rnd(SEG * 20, SEG * DRAW * 0.7); offset = pick([-1, 1]) * rnd(1.4, 3.5);
+  }
+  landZ = Math.max(landZ, front + SEG * 12);
+  bombs.push({ landZ, offset, T, t: 0, z: landZ, alt: 0, D: rnd(14000, 26000), A: rnd(24000, 32000), aimed: roll < 0.55, whistled: false });
+  erupt = 1;
+  for (let i = 0; i < 4; i++) ejecta.push({ x: rnd(-3, 3), y: 0, vx: rnd(-45, 45), vy: rnd(-130, -80), life: rnd(1.2, 1.8) });
+  Snd.launch();
+}
+function hurt() {
+  hp--; invuln = 2; speed *= 0.4; shake = 0.55; combo = 0; comboT = 0;
+  Snd.hurtCry(); flash(0.45);
+  elHp.classList.remove('hit'); void elHp.offsetWidth; elHp.classList.add('hit');
+  emit(W / 2, H - 40, 26, ['#ffd23f', '#ff6a1a', '#ffffff', '#6b8a3a'], 140, -120, 0.6, 2);
+  if (hp <= 0) { hp = 0; toast('KNOCKED OUT!', 'bad'); gameOver(); }
+  else toast('SCORCHED! -1 ♥', 'bad');
+}
+
+function update(dt) {
+  if (paused) return;
+  const playing = state === 'play', live = playing && countdown <= 0;
+  ensureGenerated(position + (DRAW + 60) * SEG);
+  const prevFront = position + PLAYER_Z;
+  const pSeg = findSegment(prevFront);
+  const speedPct = speed / MAX_SPEED;
+  const dx = dt * 2 * Math.min(1, speedPct);
+
+  if (playing && countdown > 0) {
+    countdown -= dt;
+    const c = Math.ceil(countdown);
+    if (c !== lastCountShown) {
+      lastCountShown = c;
+      if (c > 0 && c <= 3) { elCount.textContent = c; Snd.beep(false); }
+      else if (c <= 0) { elCount.textContent = 'RUN!'; Snd.beep(true); Snd.sprintCry(); setTimeout(() => { if (elCount.textContent === 'RUN!') elCount.textContent = ''; }, 700); }
+    }
+  }
+
+  // steering
+  let s = 0;
+  if (live) { if (inp('left')) s -= 1; if (inp('right')) s += 1; }
+  else if (state === 'title') { const t = autopilotTarget(); s = clamp((t - playerX) * 4, -1, 1); }
+  playerX += s * dx;
+  if (state !== 'title') playerX -= dx * Math.min(1, speedPct) * pSeg.curve * CENTRIFUGAL;
+  steer = Math.abs(s) > 0.3 ? Math.sign(s) : 0;
+
+  // sprint
+  boosting = live && inp('boost') && boost > 0.01;
+  if (boosting && !wasBoosting) Snd.sprintCry();
+  wasBoosting = boosting;
+  if (boosting) boost = Math.max(0, boost - dt * 0.28);
+  else if (live) boost = Math.min(1, boost + dt * 0.03);
+  const maxSp = MAX_SPEED * (boosting ? BOOST_MUL : 1);
+
+  // speed
+  braking = live && inp('brake');
+  if (state === 'title') speed += (speed < MAX_SPEED * 0.62 ? ACCEL : DECEL) * dt;
+  else if (live) speed += (braking ? BRAKE : ACCEL * (boosting ? 1.8 : 1)) * dt;
+  else if (state === 'over') speed += DECEL * 1.6 * dt;
+  if (speed > maxSp) speed = Math.max(maxSp, speed + DECEL * 1.5 * dt);
+  offroad = Math.abs(playerX) > 1;
+  if (offroad && speed > OFFROAD_LIMIT) speed += OFFROAD_DECEL * dt;
+  speed = clamp(speed, 0, MAX_SPEED * BOOST_MUL);
+  playerX = clamp(playerX, -2.6, 2.6);
+
+  position += speed * dt;
+  const front = position + PLAYER_Z;
+  if (invuln > 0) invuln -= dt;
+  comboT -= dt;
+
+  // run cycle + footsteps
+  runPhase += dt * Math.min(1.4, speed / MAX_SPEED) * 13;
+  const fr = Math.floor(runPhase) % 4;
+  if (fr !== lastFrame) { lastFrame = fr; if (fr % 2 === 0) Snd.footstep(Math.min(1, speed / MAX_SPEED) * (state === 'title' ? 0.5 : 1)); }
+
+  // the volcano throws bombs
+  if (state === 'title' || live || state === 'over') {
+    bombT -= dt;
+    if (bombT <= 0) {
+      const d = clamp(position / (KM * 8), 0, 1);
+      bombT = (state === 'title' ? 1.3 : lerp(1.25, 0.38, d)) * rnd(0.6, 1.4);
+      spawnBomb(front);
+    }
+  }
+  for (const b of bombs) {
+    b.t += dt;
+    const p = Math.min(1, b.t / b.T);
+    b.z = b.landZ + b.D * (1 - p); b.alt = b.A * (1 - p * p);
+    if (!b.whistled && b.aimed && p > 0.35 && live) { b.whistled = true; Snd.whistle(); }
+    if (p >= 1) {
+      b.done = true;
+      const dz = b.landZ - front, ddx = Math.abs(b.offset - playerX), adz = Math.abs(dz);
+      explosions.push({ z: b.landZ, offset: b.offset, t: 0, life: 0.75 });
+      Snd.boom(clamp(1 - adz / (SEG * 140), 0.1, 1));
+      if (adz < SEG * 40) shake = Math.max(shake, 0.3 * (1 - adz / (SEG * 40)));
+      const pr = projObj(b.landZ, b.offset, 0);
+      if (pr) {
+        const sp = clamp(pr.sc * K * 900, 6, 160);
+        emit(pr.x, pr.y, Math.round(clamp(pr.sc * K * 60, 4, 30)), ['#ffd23f', '#ff6a1a', '#3a2620', '#ffffff'], sp, -sp * 1.4, 0.7, pr.sc * K * 30 > 3 ? 3 : 2);
+      }
+      if (live) {
+        if (adz < SEG * 3 && ddx < 0.38 && invuln <= 0) hurt();
+        else if (adz < SEG * 20 && ddx < 1) {
+          dodged++;
+          if (adz < SEG * 8 && ddx < 0.9) { const bonus = 150; score += bonus; boost = Math.min(1, boost + 0.08); toast('CLOSE CALL +' + bonus, 'gold'); }
+        }
+      }
+      if (Math.abs(b.offset) < 1.05) rocks.push({ z: b.landZ, offset: b.offset, age: 0, ph: Math.random() * 6 });
+    }
+  }
+  bombs = bombs.filter(b => !b.done);
+  for (const e of explosions) e.t += dt;
+  explosions = explosions.filter(e => e.t < e.life);
+  for (const e of ejecta) { e.x += e.vx * dt; e.y += e.vy * dt; e.vy += 55 * dt; e.life -= dt; }
+  ejecta = ejecta.filter(e => e.life > 0);
+  erupt = Math.max(0, erupt - dt * 1.5);
+
+  // molten rocks left on the floor
+  for (const r of rocks) {
+    r.age += dt;
+    const prevRel = r.z - prevFront, rel = r.z - front, ddx = Math.abs(r.offset - playerX);
+    if (!live || r.hit) continue;
+    if (rel < SEG * 1.0 && prevRel >= -SEG * 0.4 && rel > -SEG * 0.6 && ddx < (ROCK_W / ROAD_W * 0.85 + PLAYER_W) / 2 * 0.9) {
+      r.hit = true;
+      explosions.push({ z: r.z, offset: r.offset, t: 0, life: 0.5 });
+      if (invuln <= 0) hurt(); else speed *= 0.7;
+    } else if (prevRel >= 0 && rel < 0 && ddx < 0.55) {
+      combo = comboT > 0 ? combo + 1 : 1; comboT = 3; bestCombo = Math.max(bestCombo, combo);
+      const bonus = 250 * combo; score += bonus; boost = Math.min(1, boost + 0.12);
+      toast((combo > 1 ? `NEAR MISS x${combo}` : 'NEAR MISS') + ` +${bonus}`, 'good'); Snd.blip(combo);
+    }
+  }
+  rocks = rocks.filter(r => !r.hit && r.z - front > -SEG * 12 && r.age < 16);
+
+  // running into the forest
+  propCD -= dt;
+  if (live && propCD <= 0 && offroad) {
+    outer: for (let i = Math.floor(prevFront / SEG); i <= Math.floor(front / SEG); i++) {
+      const sg = segments[i]; if (!sg) continue;
+      for (const sp of sg.sprites) {
+        if (sp.nc) continue;
+        const def = SPR[sp.key], ww = def.w / ROAD_W;
+        const cx = sp.offset + (sp.offset < 0 ? -1 : 1) * ww / 2;
+        if (Math.abs(playerX - cx) < (ww * def.hit + PLAYER_W) / 2) {
+          speed = Math.min(speed, MAX_SPEED / 6); propCD = 0.6; shake = 0.5; combo = 0;
+          playerX += playerX > 0 ? -0.15 : 0.15;
+          Snd.hurtCry(); toast('TIMBER!', 'bad');
+          emit(W / 2, H - 40, 20, ['#2f7a3a', '#4f9a48', '#6b4528'], 140, -100, 0.6, 2);
+          break outer;
+        }
+      }
+    }
+  }
+
+  // score, healing
+  if (live) {
+    score += speed * dt / 180 * (boosting ? 1.5 : 1);
+    if (position >= nextHeal) {
+      nextHeal += HEAL_EVERY;
+      if (hp < MAX_HP) { hp++; toast('+1 ♥ SECOND WIND', 'gold'); Snd.chime(); }
+      else { score += 2000; toast('UNTOUCHED +2000', 'gold'); Snd.chime(); }
+    }
+  }
+  if (state === 'over') { overT += dt; if (overT > 1.6) $('retry').style.visibility = 'visible'; }
+
+  const pct = Math.min(1.4, speed / MAX_SPEED);
+  bgFar += pSeg.curve * pct * dt * 12;
+  bgNear += pSeg.curve * pct * dt * 28;
+
+  // particles
+  const feetY = H - 8;
+  if (boosting) emit(W / 2 + rnd(-W * 0.06, W * 0.06), feetY, 2, ['#ffd23f', '#ff6a1a', '#ff3d1a'], 30, -40, 0.3, 2);
+  if (speed > MAX_SPEED * 0.3 && Math.random() < 0.4) emit(W / 2 + rnd(-W * 0.07, W * 0.07), feetY, 1, offroad ? ['#2f7a3a', '#6b4528'] : ['#5a4a44', '#3a302c', '#8a6a5a'], 30, -30, 0.35, 2);
+  for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 120 * dt; p.life -= dt; }
+  particles = particles.filter(p => p.life > 0);
+  if (shake > 0) shake -= dt;
+
+  const cutoff = Math.floor(position / SEG) - 40;
+  while (pruneIdx < cutoff) { segments[pruneIdx] = null; pruneIdx++; }
+
+  Snd.voice(Math.min(1.4, speed / MAX_SPEED), (state === 'play' && countdown <= 0) || (state === 'title' && speed > 100));
+}
+
+// ================= RENDER =================
+function project(p, camX, camY, camZ) {
+  p.camera.x = -camX; p.camera.y = p.world.y - camY; p.camera.z = p.world.z - camZ;
+  const s = p.screen.scale = CAM_DEPTH / p.camera.z;
+  p.screen.x = Math.round(W / 2 + s * p.camera.x * K);
+  p.screen.y = Math.round(H / 2 - s * p.camera.y * K);
+  p.screen.w = Math.round(s * ROAD_W * K);
+}
+function poly(x1, y1, x2, y2, x3, y3, x4, y4, c) {
+  ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4); ctx.closePath(); ctx.fill();
+}
+// meandering lava cracks: offsets interpolate between per-group random anchors so they stay continuous
+function crackOff(i, g, salt) {
+  const k = Math.floor(i / g), f = (i % g) / g;
+  return lerp(hash(k * 3.1 + salt) * 1.7 - 0.85, hash((k + 1) * 3.1 + salt) * 1.7 - 0.85, f);
+}
+function drawSegment(seg, next, x1, y1, w1, x2, y2, w2, fog, col, now) {
+  ctx.fillStyle = col.grass; ctx.fillRect(0, y2, W, y1 - y2);
+  const r1 = w1 * seg.edge, r2 = w2 * (next ? next.edge : seg.edge);
+  poly(x1 - w1 - r1, y1, x1 - w1, y1, x2 - w2, y2, x2 - w2 - r2, y2, col.rumble);
+  poly(x1 + w1 + r1, y1, x1 + w1, y1, x2 + w2, y2, x2 + w2 + r2, y2, col.rumble);
+  poly(x1 - w1, y1, x1 + w1, y1, x2 + w2, y2, x2 - w2, y2, col.road);
+  const i = seg.index;
+  for (const [g, salt] of [[10, 0], [7, 5.3], [13, 9.1]]) {
+    if (hash(Math.floor(i / g) * 7.3 + salt) > 0.55) continue;
+    const o1 = crackOff(i, g, salt), o2 = crackOff(i + 1, g, salt);
+    const cx1 = x1 + o1 * w1, cx2 = x2 + o2 * w2;
+    const pulse = 0.5 + 0.5 * Math.sin(now / 320 + i * 0.25 + salt);
+    const hw1 = w1 * 0.022, hw2 = w2 * 0.022;
+    poly(cx1 - hw1, y1, cx1 + hw1, y1, cx2 + hw2, y2, cx2 - hw2, y2, `rgba(255,80,20,${0.18 + 0.12 * pulse})`);
+    const cw1 = w1 * 0.006 + 0.3, cw2 = w2 * 0.006 + 0.3;
+    poly(cx1 - cw1, y1, cx1 + cw1, y1, cx2 + cw2, y2, cx2 - cw2, y2, `rgb(255,${(110 + 90 * pulse) | 0},40)`);
+  }
+  if (fog < 0.99) {
+    ctx.globalAlpha = 1 - fog; ctx.fillStyle = FOG; ctx.fillRect(0, y2, W, y1 - y2); ctx.globalAlpha = 1;
+  }
+}
+function drawSprite(img, worldW, scale, x, y, ox, oy, clipY) {
+  const dw = worldW * scale * K; if (dw < 0.6 || dw > W * 6) return;
+  const dh = dw * img.height / img.width;
+  const dx = Math.round(x + dw * ox), dy = Math.round(y + dh * oy);
+  const clipH = clipY ? Math.max(0, dy + dh - clipY) : 0;
+  if (clipH >= dh) return;
+  const sh = img.height - img.height * clipH / dh;
+  if (sh < 1) return;
+  ctx.drawImage(img, 0, 0, img.width, sh, dx, dy, Math.round(dw), Math.round(dh - clipH));
+}
+function circle(x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, Math.max(0.5, r), 0, Math.PI * 2); ctx.fill(); }
+
+function drawVolcano(now, base) {
+  const Hv = Math.round(H * 0.34), hb = W * 0.62, cw = Math.max(10, W * 0.045);
+  const cx = Math.round(W / 2 + Math.sin(bgFar * 0.0025) * W * 0.2), top = base - Hv;
+  volc.x = cx; volc.y = top;
+  glow(ctx, cx, top, Hv * 0.9, '255,90,30', 0.3 + erupt * 0.35 + 0.05 * Math.sin(now / 200));
+  // ash plume, drifting with the wind
+  for (let i = 0; i < 18; i++) {
+    const a = (now / 1000 * 0.06 + i / 18) % 1;
+    const px = cx + Math.sin(i * 2.1) * a * W * 0.05 + a * a * W * 0.28, py = top - 3 - a * H * 0.4;
+    circle(px, py, 4 + a * H * 0.15, `rgba(${lerp(120, 34, Math.min(1, a * 3)) | 0},${lerp(45, 24, Math.min(1, a * 3)) | 0},${lerp(30, 24, a) | 0},${0.8 * (1 - a * 0.75)})`);
+  }
+  // cone
+  const grad = ctx.createLinearGradient(0, top, 0, base);
+  grad.addColorStop(0, '#4a1a14'); grad.addColorStop(0.3, '#2e1210'); grad.addColorStop(1, '#1a0a0c');
+  for (let x = Math.max(0, Math.floor(cx - hb)); x < Math.min(W, cx + hb); x += 2) {
+    const d = Math.abs(x - cx); let h;
+    if (d < cw) h = Hv - 5 * (1 - (d / cw) ** 2);
+    else { const t = (d - cw) / (hb - cw); h = Hv * Math.pow(1 - t, 1.7) + noise(x * 0.08 + 3) * 3 * (1 - t); }
+    const y = Math.round(base - h);
+    ctx.fillStyle = grad; ctx.fillRect(x, y, 2, base - y + 1);
+    if (x > cx) { ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(x, y, 2, base - y + 1); }
+  }
+  // lava rivers running down the flanks
+  for (const [side, f, len] of [[-1, 0.35, 1.0], [1, 0.5, 0.7], [-1, 0.7, 0.55], [1, 0.22, 0.9]]) {
+    for (let y = 0; y < Hv * len; y++) {
+      const h = Hv - 3 - y; if (h <= 0) break;
+      const d = cw + (1 - Math.pow(h / Hv, 1 / 1.7)) * (hb - cw);
+      const xx = Math.round(cx + side * (cw * 0.5 + (d - cw * 0.5) * f) + Math.sin(y * 0.3 + f * 10) * 1.5);
+      const fade = 1 - y / (Hv * len), pulse = 0.6 + 0.4 * Math.sin(now / 250 - y * 0.15 + f * 7);
+      ctx.fillStyle = `rgba(255,${(80 + 120 * pulse * fade) | 0},30,${0.9 * fade})`;
+      ctx.fillRect(xx, Math.round(base - h), y < Hv * 0.3 ? 2 : 1, 1);
+    }
+  }
+  ctx.fillStyle = `rgba(255,200,90,${0.7 + 0.3 * erupt})`; ctx.fillRect(cx - cw, top + 1, cw * 2, 2);
+  // bombs being hurled out of the crater
+  for (const e of ejecta) {
+    const ex = cx + e.x, ey = top + e.y, a = clamp(e.life, 0, 1);
+    ctx.fillStyle = `rgba(255,120,30,${0.5 * a})`; ctx.fillRect(Math.round(ex - e.vx * 0.04), Math.round(ey - e.vy * 0.04), 1, 1);
+    ctx.fillStyle = `rgba(255,220,120,${a})`; ctx.fillRect(Math.round(ex), Math.round(ey), 2, 2);
+  }
+}
+function drawRidge(off, col, amp, freq, base) {
+  ctx.fillStyle = col;
+  for (let x = 0; x < W; x += 2) {
+    const h = (noise((x + off) * freq) * 0.5 + 0.5) * amp + amp * 0.15, t = Math.round(base - h);
+    ctx.fillRect(x, t, 2, H - t);
+  }
+}
+function drawTreeline(off, base) {
+  ctx.fillStyle = '#0d1f12';
+  for (let x = 0; x < W; x += 2) {
+    const wx = x + off, i = Math.floor(wx / 8), lf = (wx - i * 8) / 8;
+    const h = (H * 0.02 + hash(i) * H * 0.045) * (1 - Math.abs(lf * 2 - 1)) + H * 0.014 + noise(wx * 0.02) * H * 0.006;
+    ctx.fillRect(x, Math.round(base - h), 2, Math.ceil(h) + 2);
+  }
+}
+function drawFlock(now) {
+  const span = W * 1.6;
+  for (const b of flock) {
+    const x = wrapX(b.x * span + now * b.v * b.dir - bgFar * 0.25, span) - W * 0.3;
+    const y = H * b.y + Math.sin(now / 900 + b.ph) * 4;
+    const img = PTERO_SIL[Math.floor(now / (140 + b.s * 60) + b.ph * 3) % 4];
+    const w = Math.round(img.width * b.s), h = Math.round(img.height * b.s);
+    if (b.dir > 0) { ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.scale(-1, 1); ctx.drawImage(img, -w / 2, -h / 2, w, h); ctx.restore(); }
+    else ctx.drawImage(img, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
+  }
+}
+function drawBackground(now) {
+  const hz = Math.round(H * 0.5);
+  const g = ctx.createLinearGradient(0, 0, 0, hz);
+  g.addColorStop(0, '#12040a'); g.addColorStop(0.45, '#3e0f14'); g.addColorStop(0.85, '#a8321a'); g.addColorStop(1, '#ff7a2a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, hz + 2);
+  for (let i = 0; i < 5; i++) glow(ctx, wrapX(i * W * 0.37 - bgFar * 0.1 - now * 0.004, W * 1.6) - W * 0.3, H * (0.06 + (i % 3) * 0.08), H * 0.35, '18,6,8', 0.6);
+  drawVolcano(now, hz + 2);
+  drawFlock(now);
+  drawRidge(bgFar * 1.3 + 300, '#26100f', H * 0.06, 0.016, hz + 2);
+  drawTreeline(bgNear + 700, hz + 2);
+  if (erupt > 0) { ctx.fillStyle = `rgba(255,110,40,${erupt * 0.08})`; ctx.fillRect(0, 0, W, hz); }
+}
+function drawSpeedLines() {
+  ctx.strokeStyle = 'rgba(255,220,180,0.3)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 16; i++) {
+    const a = Math.random() * Math.PI * 2, r1 = H * 0.3 + Math.random() * H * 0.25, r2 = r1 + H * 0.3;
+    ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(a) * r1 * 1.4, H * 0.5 + Math.sin(a) * r1 * 0.7);
+    ctx.lineTo(W / 2 + Math.cos(a) * r2 * 1.4, H * 0.5 + Math.sin(a) * r2 * 0.7); ctx.stroke();
+  }
+}
+
+function drawMarker(b, now) {
+  const pr = projObj(b.landZ, b.offset, 0); if (!pr) return;
+  const p = b.t / b.T, rw = 430 * pr.sc * K; if (rw < 1) return;
+  const ry = rw * clamp(CAM_H / pr.camZ, 0.08, 0.6);
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, pr.seg.clip); ctx.clip();
+  const a = 0.3 + 0.6 * p, pulse = 0.5 + 0.5 * Math.sin(now / (p > 0.7 ? 45 : 110));
+  ctx.fillStyle = `rgba(255,40,20,${a * 0.22})`;
+  ctx.beginPath(); ctx.ellipse(pr.x, pr.y, rw, ry, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = `rgba(255,${(50 + 90 * pulse) | 0},40,${a})`; ctx.lineWidth = Math.max(1, ry * 0.18);
+  ctx.beginPath(); ctx.ellipse(pr.x, pr.y, rw, ry, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = Math.max(1, ry * 0.1);
+  ctx.beginPath(); ctx.ellipse(pr.x, pr.y, rw * (1 - p) + 0.5, ry * (1 - p) + 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+function drawBomb(b) {
+  const pr = projObj(b.z, b.offset, b.alt); if (!pr) return;
+  const sz = BOMB_W * pr.sc * K; if (sz < 0.5) return;
+  const p = b.t / b.T;
+  // fiery tail pointing back toward where it came from
+  for (let k = 4; k >= 1; k--) {
+    const q = Math.max(0, p - k * 0.035), z = b.landZ + b.D * (1 - q), alt = b.A * (1 - q * q);
+    const tp = projObj(z, b.offset, alt); if (!tp) continue;
+    circle(tp.x, tp.y, sz * (0.5 - k * 0.08), k > 2 ? `rgba(70,45,40,${0.5 - k * 0.08})` : `rgba(255,${120 - k * 20},30,${0.7 - k * 0.12})`);
+  }
+  drawSprite(SPR.bomb.img, BOMB_W, pr.sc, pr.x, pr.y, -0.5, -0.5);
+}
+function drawRock(r, now) {
+  const pr = projObj(r.z, r.offset, 0); if (!pr) return;
+  const def = SPR.boulder, img = def.frames[Math.floor(now / 160 + r.ph) % def.frames.length];
+  drawSprite(img, def.w, pr.sc, pr.x, pr.y, -0.5, -1, pr.seg.clip);
+  const rw = def.w * pr.sc * K; if (rw < 2) return;
+  for (let k = 0; k < 3; k++) {
+    const a = (now / 1400 + k / 3 + r.ph) % 1;
+    circle(pr.x + Math.sin(a * 4 + k) * rw * 0.12 + a * rw * 0.2, pr.y - rw * 0.4 - a * rw * 0.9, rw * (0.08 + a * 0.14), `rgba(55,45,42,${0.45 * (1 - a)})`);
+  }
+}
+function drawExplosion(e) {
+  const pr = projObj(e.z, e.offset, 0); if (!pr) return;
+  const q = e.t / e.life, r = (380 + 1100 * q) * pr.sc * K * (e.life < 0.6 ? 0.6 : 1);
+  if (r < 0.5) return;
+  const cy = pr.y - r * 0.55;
+  ctx.globalAlpha = 1 - q;
+  circle(pr.x, cy - r * 0.3 * q, r * 1.05, '#3a2620');
+  circle(pr.x, cy, r * 0.85, '#ff6a1a');
+  circle(pr.x, cy + r * 0.05, r * 0.55 * (1 - q * 0.6), '#ffd23f');
+  circle(pr.x, cy + r * 0.1, r * 0.3 * (1 - q), '#fff8d8');
+  ctx.globalAlpha = 1;
+}
+const DRAW_ORDER = { mark: 0, rock: 1, ex: 2, bomb: 3 };
+
+function render() {
+  frameNo++;
+  const base = findSegment(position);
+  const basePct = (position % SEG) / SEG;
+  const front = position + PLAYER_Z;
+  const pSeg = findSegment(front);
+  const pPct = (front % SEG) / SEG;
+  const playerY = lerp(pSeg.p1.world.y, pSeg.p2.world.y, pPct);
+  const now = performance.now();
+
+  ctx.save();
+  if (shake > 0) ctx.translate(Math.round(rnd(-1, 1) * shake * 10), Math.round(rnd(-1, 1) * shake * 6));
+  drawBackground(now);
+
+  let maxy = H, x = 0, dx = -(base.curve * basePct);
+  for (let n = 0; n < DRAW; n++) {
+    const seg = segments[base.index + n]; if (!seg) break;
+    seg.fog = 1 / Math.pow(Math.E, (n / DRAW) * (n / DRAW) * FOG_DENSITY);
+    seg.clip = maxy;
+    project(seg.p1, playerX * ROAD_W - x, playerY + CAM_H, position);
+    project(seg.p2, playerX * ROAD_W - x - dx, playerY + CAM_H, position);
+    x += dx; dx += seg.curve;
+    seg.vis = seg.p1.camera.z > CAM_DEPTH ? frameNo : 0;
+    if (seg.p1.camera.z <= CAM_DEPTH || seg.p2.screen.y >= seg.p1.screen.y || seg.p2.screen.y >= maxy) continue;
+    const col = SEGCOL[Math.floor(seg.index / RUMBLE) % 2];
+    drawSegment(seg, segments[seg.index + 1], seg.p1.screen.x, seg.p1.screen.y, seg.p1.screen.w, seg.p2.screen.x, seg.p2.screen.y, seg.p2.screen.w, seg.fog, col, now);
+    maxy = seg.p1.screen.y;
+  }
+
+  // bin dynamic objects by segment so they're drawn back-to-front with the scenery
+  const bins = new Map();
+  const bin = (z, item) => {
+    const i = Math.floor(z / SEG); if (i < base.index || i >= base.index + DRAW) return;
+    let a = bins.get(i); if (!a) bins.set(i, a = []); a.push(item);
+  };
+  for (const b of bombs) { bin(b.landZ, ['mark', b]); bin(b.z, ['bomb', b]); }
+  for (const r of rocks) bin(r.z, ['rock', r]);
+  for (const e of explosions) bin(e.z, ['ex', e]);
+
+  for (let n = DRAW - 1; n > 0; n--) {
+    const seg = segments[base.index + n]; if (!seg) continue;
+    if (seg.p1.camera.z > CAM_DEPTH) {
+      ctx.globalAlpha = clamp(seg.fog * 1.5, 0, 1);
+      const sc = seg.p1.screen.scale;
+      for (const sp of seg.sprites) {
+        const def = SPR[sp.key];
+        const img = def.frames ? def.frames[Math.floor(now / 130 + (sp.ph || 0) * 3) % def.frames.length] : def.img;
+        if (sp.float) {
+          const off = sp.offset + sp.drift * Math.sin(now / 1500 + sp.ph);
+          const alt = sp.alt + sp.bob * Math.sin(now / 700 + sp.ph);
+          drawSprite(img, def.w, sc, seg.p1.screen.x + sc * off * ROAD_W * K, seg.p1.screen.y - alt * sc * K, -0.5, -0.5, 0);
+        } else {
+          drawSprite(img, def.w, sc, seg.p1.screen.x + sc * sp.offset * ROAD_W * K, seg.p1.screen.y, sp.offset < 0 ? -1 : 0, -1, seg.clip);
+        }
+      }
+      const items = bins.get(seg.index);
+      if (items) {
+        ctx.globalAlpha = clamp(seg.fog * 2 + 0.2, 0, 1);
+        items.sort((a, b) => DRAW_ORDER[a[0]] - DRAW_ORDER[b[0]]);
+        for (const [type, o] of items) {
+          if (type === 'mark') drawMarker(o, now);
+          else if (type === 'rock') drawRock(o, now);
+          else if (type === 'ex') drawExplosion(o);
+          else drawBomb(o);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (seg === pSeg) drawPlayer(pSeg, pPct);
+  }
+
+  // falling ash and rising embers
+  for (const a of ash) {
+    if (a.e) {
+      ctx.fillStyle = `rgba(255,${(120 + 100 * a.s) | 0},40,${0.5 + 0.5 * Math.sin(now / 90 + a.s * 50)})`;
+      ctx.fillRect(Math.floor(wrapX(a.x * W + Math.sin(now / 700 + a.s * 20) * 8 - bgNear * 0.6, W)), Math.floor(wrapX(a.y * H - now * 0.02 * (0.5 + a.s), H)), 1, 1);
+    } else {
+      ctx.fillStyle = `rgba(190,180,175,${0.2 + 0.4 * a.s})`;
+      const sz = a.s > 0.85 ? 2 : 1;
+      ctx.fillRect(Math.floor(wrapX(a.x * W + Math.sin(now / 1100 + a.s * 10) * 10 - bgNear * (0.4 + a.s) - now * 0.01, W)), Math.floor(wrapX(a.y * H + now * 0.015 * (0.5 + a.s), H)), sz, sz);
+    }
+  }
+  for (const p of particles) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.col; ctx.fillRect(p.x | 0, p.y | 0, p.s, p.s); }
+  ctx.globalAlpha = 1;
+  if (boosting) drawSpeedLines();
+  ctx.restore();
+}
+function drawPlayer(pSeg, pPct) {
+  if (invuln > 0 && state === 'play' && Math.floor(invuln * 12) % 2) return;
+  const sc = CAM_DEPTH / PLAYER_Z;
+  const camY = lerp(pSeg.p1.camera.y, pSeg.p2.camera.y, pPct);
+  const f = speed > 80 ? Math.floor(runPhase) % 4 : 0;
+  const u = RAPTOR_W * sc * K / 48;
+  const bob = (f % 2 ? -1.5 : 0) * u + (offroad && speed > 500 ? Math.round(rnd(-1.5, 1.5)) : 0);
+  const y = Math.round(H / 2 - sc * camY * K + bob);
+  const lean = steer !== 0 && speed > 0 ? steer : 0;
+  drawSprite(SPR.player[lean + ':' + f], RAPTOR_W, sc, W / 2, y, -0.5, -1);
+}
+
+// ================= HUD =================
+const last = {};
+function setText(el, key, v) { if (last[key] !== v) { last[key] = v; el.innerHTML = v; } }
+function hud() {
+  if (state === 'title') return;
+  setText(elScore, 's', Math.floor(score).toLocaleString());
+  setText(elDist, 'd', (position / KM).toFixed(2) + ' KM');
+  setText(elHp, 'h', '♥'.repeat(hp) + `<span class="lost">${'♥'.repeat(MAX_HP - hp)}</span>`);
+  setText(elSpeed, 'v', Math.round(speed / MAX_SPEED * 72) + ' <small>KM/H</small>');
+  const bw = Math.round(boost * 100) + '%';
+  if (last.b !== bw) { last.b = bw; elBoost.style.width = bw; elBoost.classList.toggle('full', boost > 0.99); }
+}
+
+// ================= LOOP =================
+resetWorld();
+let lastT = performance.now(), acc = 0;
+const STEP = 1 / 60;
+function frame(now) {
+  acc += Math.min(0.1, (now - lastT) / 1000); lastT = now;
+  while (acc >= STEP) { update(STEP); acc -= STEP; }
+  render(); hud();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
