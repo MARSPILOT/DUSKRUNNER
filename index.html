@@ -134,6 +134,7 @@ const OFFROAD_DECEL = -MAX_SPEED / 1.6, OFFROAD_LIMIT = MAX_SPEED / 4, CENTRIFUG
 const BOOST_MUL = 1.38, FOG_DENSITY = 4, CP_SEGS = 1400, START_ARCH = 14;
 const CAR_W = 560, PLAYER_HALF = CAR_W / ROAD_W;
 const LANE_X = [-0.66, 0, 0.66];
+const STEER_RATE = 3.2; // road half-widths per second at full speed (was 2)
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -759,7 +760,9 @@ function update(dt) {
   let s = 0;
   if (live) { if (inp('left')) s -= 1; if (inp('right')) s += 1; }
   else if (state === 'title') { const t = autopilotTarget(); s = clamp((t - playerX) * 4, -1, 1); }
-  playerX += s * dx;
+  // steering authority: faster turn rate, and keeps decent grip at low speed (none when stopped)
+  const steerDx = speed > 0 ? dt * STEER_RATE * Math.max(0.45, Math.min(1, speedPct)) : 0;
+  playerX += s * steerDx;
   if (state !== 'title') playerX -= dx * Math.min(1, speedPct) * pSeg.curve * CENTRIFUGAL;
   steer = Math.abs(s) > 0.3 ? Math.sign(s) : 0;
 
