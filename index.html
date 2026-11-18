@@ -87,7 +87,7 @@ html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:
 <div id="title" class="screen">
   <h1 class="logo">DUSK<br>RUNNER</h1>
   <div class="tag">AN ENDLESS DRIVE INTO THE NEON DUSK</div>
-  <div class="maplbl">SELECT MAP · 1 2 3 (ALSO WORKS MID-RACE)</div>
+  <div class="maplbl">SELECT MAP · 1 2 3 4 (ALSO WORKS MID-RACE)</div>
   <div class="maps" id="mapsTitle"></div>
   <div class="blink">PRESS ENTER / TAP TO DRIVE</div>
   <div class="keys">
@@ -176,11 +176,17 @@ const BIOMES = [
     mtn0: '#000000', mtn1: '#000000', fog: '#0d0722', grass: ['#000000', '#000000'], road: ['#2b2452', '#251f49'],
     rumble: ['#b04dff', '#7cff6b'], lane: '#7cff6b', props: ['ufo', 'ufo', 'ufo', 'ufoBeam', 'asteroid', 'asteroid', 'blackhole'],
     density: 0.3, night: 1, skyline: 0, snow: 0, walls: true },
+  { name: 'DEEP CAVE', kind: 'cave', sky0: '#030206', sky1: '#0b0712', sky2: '#170c1f', sun0: '#000000', sun1: '#000000',
+    mtn0: '#0d0914', mtn1: '#09060e', fog: '#08060c', grass: ['#16111d', '#130f19'], road: ['#29232f', '#25202b'],
+    rumble: ['#4b2a6e', '#1c1724'], lane: '#6e58a0',
+    props: ['crystal', 'crystal', 'crystal', 'crystal', 'crystalBig', 'stalagmite', 'stalagmite', 'stalactite', 'stalactite'],
+    density: 0.6, night: 0, skyline: 0, snow: 0, walls: true },
 ];
 const MAPS = [
   { name: 'CLASSIC ROAD', short: 'ROAD', biomes: [0, 1, 2, 3] },
   { name: 'DEEP TRENCH', short: 'SEA', biomes: [4] },
   { name: 'VOID HIGHWAY', short: 'SPACE', biomes: [5] },
+  { name: 'DEEP CAVE', short: 'CAVE', biomes: [6] },
 ];
 let curMap = 0; try { curMap = clamp(+localStorage.getItem('duskRunnerMap') || 0, 0, MAPS.length - 1); } catch (e) {}
 const mapBiome = n => { const b = MAPS[curMap].biomes; return b[Math.floor(n / CP_SEGS) % b.length]; };
@@ -196,6 +202,8 @@ const PROPS = {
   ufoBeam: { off: [1.6, 4.5], alt: [1700, 2700], bob: 120, drift: 0.3 },
   asteroid: { off: [1.4, 7], alt: [-2200, 2600], bob: 90 },
   blackhole: { off: [4, 9], alt: [800, 2600], bob: 0, rare: 0.8 },
+  crystal: { off: [1.1, 3.4] }, crystalBig: { off: [1.3, 3.8], rare: 0.4 }, stalagmite: { off: [1.25, 4.5] },
+  stalactite: { off: [1.2, 3.2], alt: [2500, 3300], bob: 0, above: 0.55, aboveAlt: [2800, 3400] },
 };
 const ENV_KEYS = ['sky0', 'sky1', 'sky2', 'sun0', 'sun1', 'mtn0', 'mtn1', 'fog'];
 for (const b of BIOMES) {
@@ -444,7 +452,105 @@ function buildSprites() {
   addSpr('archCP', arch('CHECKPOINT', '#ffd23f', '#3a0d4a'), ROAD_W * 2.35, 0);
   addSpr('archStart', arch('START', '#ff4fa3', '#ffffff'), ROAD_W * 2.35, 0);
 }
-buildSprites(); buildSeaSpace();
+// ================= DEEP CAVE SPRITES =================
+const ln = (r, x0, y0, x1, y1, c) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) | 0 || 1; for (let i = 0; i <= n; i++) r(Math.round(lerp(x0, x1, i / n)), Math.round(lerp(y0, y1, i / n)), 1, 1, c); };
+// a pointed crystal prism: c = [lit face, shaded face, highlight]
+function shard(r, cx, by, h, w, lean, c) {
+  const tip = Math.max(2, Math.round(w * 1.4));
+  for (let y = 0; y < h; y++) {
+    const x = cx + lean * (1 - y / h) * h * 0.35, hw = y < tip ? Math.max(0.5, w * y / tip) : w;
+    const L = Math.round(x - hw), M = Math.round(x), R = Math.round(x + hw);
+    r(L, by - h + y, Math.max(1, M - L), 1, c[0]); r(M, by - h + y, Math.max(1, R - M), 1, c[1]);
+    if (y > tip && y < h - 2 && y % 5) r(Math.round(x - hw * 0.5), by - h + y, 1, 1, c[2]);
+  }
+}
+const CRYS = [
+  [['#e7c4ff', '#8a3dff', '#ffffff'], '170,80,255'], [['#c4ffff', '#1fa8d0', '#ffffff'], '60,220,255'],
+  [['#ffc8ec', '#e0308f', '#ffffff'], '255,80,180'], [['#d8ffc0', '#3cc75a', '#ffffff'], '110,255,130'],
+];
+function monsterImgs() {
+  const SH = 'rgba(0,0,0,0.45)';
+  const shade = f => mk(40, 34, (g, r) => {            // hooded shade with burning eyes
+    r(4, 31, 32, 3, SH); glow(g, 20, 13, 19, '160,0,50', 0.35);
+    const B = '#0b0710';
+    dome(r, 20, 3, 12, 13, B); r(8, 16, 24, 12, B);
+    for (let x = 8; x < 32; x += 3) r(x, 28, 2, 2 + ((x * 7 + f * 5) % 5), B);
+    r(9, 8, 1, 10, '#3a2050'); r(30, 8, 1, 10, '#3a2050'); r(19, 3, 2, 1, '#3a2050');
+    r(5, 17 + f, 3, 7, B); r(32, 17 + (1 - f), 3, 7, B);
+    for (const x of [4, 6, 32, 34]) r(x, 24 + (x < 20 ? f : 1 - f), 1, 2, '#cfc4dc');
+    r(14, 9, 3, 2, '#ff2a3a'); r(23, 9, 3, 2, '#ff2a3a'); r(15, 9, 1, 1, '#ffd6d6'); r(24, 9, 1, 1, '#ffd6d6');
+  });
+  const beast = f => mk(40, 30, (g, r) => {            // horned hellbeast, ember cracks in its hide
+    r(3, 27, 34, 3, SH); glow(g, 20, 15, 18, '255,70,20', 0.25);
+    const D = '#2a0a0c', H = '#d8ccb0';
+    r(7, 19, 6, 9 - (f ? 3 : 0), D); r(27, 19, 6, 9 - (f ? 0 : 3), D);
+    ell(r, 20, 15, 15, 8, '#4a1418'); ell(r, 20, 13, 12, 5, '#5e1c20');
+    for (let x = 12; x <= 28; x += 4) r(x, 7, 2, 2, D);
+    for (const [x, y, w, h] of [[12, 14, 4, 1], [15, 15, 1, 2], [24, 12, 5, 1], [27, 13, 1, 3], [18, 18, 4, 1], [9, 17, 3, 1]]) r(x, y, w, h, f ? '#ff8a3a' : '#ff5a1a');
+    ell(r, 20, 6, 5, 3, '#4a1418');
+    for (const sx of [-1, 1]) for (const [dx, dy] of [[5, 4], [7, 3], [9, 1], [10, -1], [10, -2]]) r(20 + sx * dx - (sx < 0 ? 1 : 0), 4 + dy - 3, 2, 2, H);
+    r(17, 6, 2, 1, '#ffd23f'); r(21, 6, 2, 1, '#ffd23f');
+    const tx = f ? 23 : 15; ln(r, 20, 21, tx, 26, D); r(tx - 1, 26, 3, 2, D);
+  });
+  const spider = f => mk(40, 26, (g, r) => {           // giant cave spider
+    r(4, 23, 32, 3, SH); glow(g, 20, 6, 10, '120,255,110', 0.3);
+    const L = '#1c1222';
+    for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) {
+      const lift = (f + i) % 2 ? -2 : 0, kx = 20 + sx * (9 + i * 2), ky = 4 + i * 2, fx = 20 + sx * (15 + i * 1.3), fy = 15 + i * 3 + lift;
+      ln(r, 20 + sx * 4, 8 + i, kx, ky, L); ln(r, kx, ky, fx, fy, L); ln(r, kx + sx, ky, fx + sx, fy, L);
+    }
+    ell(r, 20, 14, 10, 8, '#120c16'); ell(r, 18, 12, 6, 4, '#1e1426');
+    r(19, 9, 2, 2, '#9a3aff'); r(18, 11, 4, 1, '#9a3aff'); r(17, 12, 6, 1, '#6a1ad0'); r(18, 13, 4, 1, '#9a3aff'); r(19, 14, 2, 2, '#9a3aff');
+    ell(r, 20, 5, 6, 3, '#18101c');
+    for (const [x, y] of [[17, 3], [19, 2], [21, 2], [23, 3], [18, 4], [22, 4]]) r(x, y, 1, 1, '#7cff6b');
+  });
+  const golem = f => mk(40, 36, (g, r) => {            // stone golem with crystals growing from its back
+    r(4, 33, 32, 3, SH); glow(g, 20, 10, 16, '60,220,255', 0.3);
+    const S = '#3a3a4a', SD = '#26262f';
+    r(11, 27, 7, 7 - (f ? 2 : 0), SD); r(22, 27, 7, 7 - (f ? 0 : 2), SD);
+    r(8, 10, 24, 19, S); r(6, 12, 28, 13, S); r(8, 26, 24, 3, SD); r(26, 10, 6, 19, SD);
+    r(2, 13, 5, 14 + f, S); r(33, 13, 5, 15 - f, SD); r(1, 26 + f, 7, 4, SD); r(32, 27 - f, 7, 4, SD);
+    ln(r, 12, 14, 16, 20, SD); ln(r, 16, 20, 14, 25, SD); ln(r, 24, 12, 22, 18, SD);
+    for (const [x, h, w, l] of [[13, 10, 2, -0.6], [18, 13, 2.5, 0], [24, 9, 2, 0.6]]) shard(r, x, 12, h, w, l, CRYS[1][0]);
+    r(15, 20, 2, 1, '#6ff3ff'); r(23, 20, 2, 1, '#6ff3ff');
+  });
+  const worm = f => mk(40, 34, (g, r) => {             // burrowing maw-worm
+    r(4, 31, 32, 3, SH); glow(g, 20, 8, 16, '255,60,170', 0.3);
+    const sway = f ? 1 : -1;
+    for (let i = 0; i < 6; i++) {
+      const y = 28 - i * 4, rx = 14 - i * 1.2, x = 20 + Math.round(sway * i * 0.5);
+      ell(r, x, y, Math.round(rx), 4, i % 2 ? '#2a1238' : '#3a1a4a');
+      r(x - Math.round(rx * 0.5), y - 1, 2, 1, '#ff4fb0'); r(x + Math.round(rx * 0.4), y + 1, 2, 1, '#ff4fb0');
+    }
+    const mx = 20 + sway * 3;
+    ell(r, mx, 5, 8, 4, '#4a2058'); ell(r, mx, 5, 6, 3, '#1a0610');
+    for (let a = 0; a < 6.28; a += 0.7) r(Math.round(mx + Math.cos(a) * 5), Math.round(5 + Math.sin(a) * 2), 1, 1, '#f0e6d0');
+  });
+  return [shade, beast, spider, golem, worm].map(fn => [fn(0), fn(1)]);
+}
+function buildCave() {
+  CRYS.forEach(([c, gl], k) => addSpr('crys' + k, mk(32, 40, (g, r) => {
+    glow(g, 16, 26, 20, gl, 0.6);
+    ell(r, 16, 38, 13, 2, '#1a1420');
+    for (const [x, h, w, l] of [[6, 14, 2.5, -0.7], [26, 16, 2.5, 0.7], [10, 24, 3, -0.5], [22, 26, 3, 0.5], [16, 34, 3.5, 0]]) shard(r, x, 39, h, w, l, c);
+  }), 720, 0.6));
+  addSpr('crystalBig', mk(48, 80, (g, r) => {
+    glow(g, 24, 50, 34, '150,90,255', 0.55);
+    ell(r, 24, 78, 20, 2, '#1a1420');
+    for (const [x, h, w, l, k] of [[10, 34, 4, -0.5, 1], [38, 38, 4, 0.5, 2], [17, 56, 5, -0.25, 0], [31, 52, 5, 0.3, 0], [24, 76, 6, 0, 0]]) shard(r, x, 79, h, w, l, CRYS[k][0]);
+  }), 1500, 0.5);
+  addSpr('stalagmite', mk(22, 44, (g, r) => {
+    for (let y = 0; y < 44; y++) { const hw = Math.max(1, Math.round(1 + (y / 44) ** 1.3 * 10)); r(11 - hw, y, hw, 1, '#3a3346'); r(11, y, hw, 1, '#262130'); }
+    for (let y = 8; y < 44; y += 7) r(9, y, 1, 3, '#4e4560');
+    shard(r, 17, 44, 9, 1.8, 0.4, CRYS[0][0]);
+  }), 800, 0.5);
+  addSpr('stalactite', mk(22, 48, (g, r) => {
+    for (let y = 0; y < 48; y++) { const hw = Math.max(1, Math.round(1 + ((48 - y) / 48) ** 1.3 * 10)); r(11 - hw, y, hw, 1, '#2e2838'); r(11, y, hw, 1, '#1d1924'); }
+    glow(g, 11, 46, 4, '120,240,255', 0.8); r(10, 46, 2, 2, '#c4ffff');
+  }), 950, 0);
+  SPR.monsters = monsterImgs();
+}
+buildSprites(); buildSeaSpace(); buildCave();
 
 // ================= AUDIO =================
 const Snd = {
@@ -465,6 +571,12 @@ const Snd = {
       f.type = 'lowpass'; f.frequency.value = 600; f.Q.value = 3; g.gain.value = 0;
       o1.connect(f); o2.connect(f); f.connect(g); g.connect(this.sfx); o1.start(); o2.start();
       this.eng = { o1, o2, f, g };
+      const d1 = ac.createOscillator(), d2 = ac.createOscillator(), df = ac.createBiquadFilter(), dg = ac.createGain(), dl = ac.createOscillator(), dlg = ac.createGain();
+      d1.type = 'sawtooth'; d1.frequency.value = 41.2; d2.type = 'sawtooth'; d2.frequency.value = 58.3; // low E and its tritone
+      df.type = 'lowpass'; df.frequency.value = 220; df.Q.value = 6; dl.frequency.value = 0.13; dlg.gain.value = 120;
+      dl.connect(dlg); dlg.connect(df.frequency); d1.connect(df); d2.connect(df); df.connect(dg); dg.gain.value = 0; dg.connect(this.sfx);
+      d1.start(); d2.start(); dl.start();
+      this.drone = dg;
       this.next = ac.currentTime + 0.1;
       setInterval(() => this.schedule(), 25);
     } catch (e) { this.ac = null; }
@@ -520,6 +632,22 @@ const Snd = {
     this.eng.f.frequency.setTargetAtTime(350 + pct * 1500 + (boost ? 600 : 0), t, 0.1);
     this.eng.g.gain.setTargetAtTime(on ? 0.045 + pct * 0.04 : 0, t, 0.1);
   },
+  ambience(cave) {
+    if (!this.drone || !this.ok() || this.cave === cave) return;
+    this.cave = cave; const t = this.ac.currentTime;
+    this.drone.gain.setTargetAtTime(cave ? 0.08 : 0, t, 0.8);
+    this.music.gain.setTargetAtTime(cave ? 0.15 : 0.3, t, 0.8);
+  },
+  growl() {
+    if (!this.ok()) return;
+    const ac = this.ac, t = ac.currentTime, o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain(), tr = ac.createOscillator(), tg = ac.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(rnd(48, 62), t); o.frequency.exponentialRampToValueAtTime(32, t + 1.4);
+    f.type = 'lowpass'; f.frequency.value = 260; tr.frequency.value = 9; tg.gain.value = 0.05;
+    tr.connect(tg); tg.connect(g.gain);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.12, t + 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    o.connect(f); f.connect(g); g.connect(this.sfx); o.start(t); tr.start(t); o.stop(t + 1.6); tr.stop(t + 1.6);
+    this.noiseHit(t, 1.2, 0.08, 'lowpass', 180, this.sfx);
+  },
   toggleMute() { this.muted = !this.muted; if (this.master) this.master.gain.value = this.muted ? 0 : 0.6; }
 };
 
@@ -558,6 +686,7 @@ function generateSection() {
 function variant(k) {
   if (k === 'billboard') return 'bb' + (Math.random() * 4 | 0);
   if (k === 'building') return 'bld' + (Math.random() * 3 | 0);
+  if (k === 'crystal') return 'crys' + (Math.random() * 4 | 0);
   return k;
 }
 function decorate(from, to) {
@@ -583,7 +712,7 @@ function ensureGenerated(z) { while (segments.length * SEG < z) generateSection(
 
 function carProps(car) {
   car.lane = pick(LANE_X); car.offset = car.lane + rnd(-0.06, 0.06); car.target = car.offset;
-  car.speed = MAX_SPEED * rnd(0.22, 0.58); car.sp = pick(SPR.cars); car.hitT = 0;
+  car.speed = MAX_SPEED * rnd(0.22, 0.58); car.sp = pick(SPR.cars); car.mi = Math.random() * SPR.monsters.length | 0; car.hitT = 0;
 }
 function placeCar(car, z) {
   if (car.seg) { const a = car.seg.cars, i = a.indexOf(car); if (i >= 0) a.splice(i, 1); }
@@ -787,7 +916,7 @@ function update(dt) {
       playerX = Math.sign(playerX) * 0.9;
       if (state !== 'title' && speed > MAX_SPEED * 0.2) {
         speed += OFFROAD_DECEL * 0.5 * dt; shake = Math.max(shake, 0.06);
-        if (Math.random() < 0.6) emit(W / 2 + Math.sign(playerX) * W * 0.11, H - 22, 2, BIOMES[pSeg.biome].kind === 'sea' ? ['#8ffcff', '#ffffff'] : ['#b04dff', '#7cff6b', '#ffffff'], 60, -90, 0.3, 2);
+        if (Math.random() < 0.6) emit(W / 2 + Math.sign(playerX) * W * 0.11, H - 22, 2, BIOMES[pSeg.biome].kind === 'sea' ? ['#8ffcff', '#ffffff'] : BIOMES[pSeg.biome].kind === 'cave' ? ['#c58cff', '#6ff3ff', '#ffffff'] : ['#b04dff', '#7cff6b', '#ffffff'], 60, -90, 0.3, 2);
       }
     }
   } else offroad = Math.abs(playerX) > 1;
@@ -886,6 +1015,9 @@ function update(dt) {
   const cutoff = Math.floor(position / SEG) - 40;
   while (pruneIdx < cutoff) { segments[pruneIdx] = null; pruneIdx++; }
 
+  const inCave = BIOMES[pSeg.biome].kind === 'cave';
+  Snd.ambience(inCave);
+  if (inCave && state === 'play' && Math.random() < dt / 9) Snd.growl();
   Snd.engine(Math.min(1.4, speed / MAX_SPEED), state === 'play' || (state === 'over' && speed > 100), boosting);
 }
 
@@ -1007,6 +1139,72 @@ function drawSpaceBackground(e, now) {
   const bh = SPR.blackhole.frames[Math.floor(now / 120) % 8], bs = Math.round(H * 0.62);
   ctx.drawImage(bh, Math.round(wrapX(W * 0.78 - bgFar * 0.35, W * 1.8) - W * 0.4 - bs / 2), Math.round(H * 0.47 - bs * 0.62), bs, bs);
 }
+function drawCaveBackground(e, now) {
+  const hz = Math.round(H * 0.5);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, rgb(e.sky0)); g.addColorStop(0.5, rgb(e.sky2)); g.addColorStop(1, rgb(e.sky0));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // something glows red, deep down the tunnel
+  glow(ctx, W / 2, hz, H * 0.38, '150,15,35', 0.3 + 0.08 * Math.sin(now / 900));
+  drawRidge(bgFar, e.mtn0, H * 0.12, 0.02, hz + 2, 0, 0);
+  drawRidge(bgNear + 500, e.mtn1, H * 0.06, 0.04, hz + 2, 0, 0);
+  // distant crystal glints in the walls
+  for (let i = 0; i < 16; i++) {
+    const x = wrapX(hash(i) * W * 1.5 - bgFar * 0.3, W * 1.5) - W * 0.25, y = hz - 4 - hash(i + 50) * H * 0.28;
+    const c = CRYS[i % 4][1], a = 0.22 + 0.18 * Math.sin(now / 600 + i * 1.7);
+    glow(ctx, x, y, 5 + hash(i + 9) * 8, c, a);
+    ctx.fillStyle = `rgba(${c},${a + 0.45})`; ctx.fillRect(x | 0, y | 0, 1, 2);
+  }
+  // eyes watching from the dark, opening and blinking
+  for (let i = 0; i < 7; i++) {
+    const per = 5000 + hash(i + 3) * 5000, ph = (now + hash(i) * per) % per;
+    if (ph > per * 0.4 || ph % 1100 < 90) continue;
+    const x = wrapX(hash(i + 20) * W * 1.4 - bgFar * 0.35, W * 1.4) - W * 0.2, y = hz - 6 - hash(i + 30) * H * 0.22;
+    const sz = hash(i + 40) > 0.6 ? 2 : 1, col = hash(i + 60) > 0.75 ? '#ffd23f' : '#ff2a2a';
+    glow(ctx, x + 2, y, 7, col === '#ff2a2a' ? '255,30,30' : '255,210,60', 0.22);
+    ctx.fillStyle = col; ctx.fillRect(x | 0, y | 0, sz, sz); ctx.fillRect((x + 3 + sz) | 0, y | 0, sz, sz);
+  }
+  // ceiling of stalactites
+  for (const [par, col, amp] of [[0.6, '#0a0710', 0.16], [1.1, '#050308', 0.1]]) {
+    ctx.fillStyle = col;
+    for (let x = 0; x < W; x += 2) {
+      const wx = x + bgFar * par + (par > 1 ? 400 : 0), i = Math.floor(wx / 9), lf = (wx - i * 9) / 9;
+      let h = H * 0.05 + (noise(wx * 0.015) * 0.5 + 0.5) * H * 0.07;
+      if (hash(i + par) > 0.45) h += hash(i + 0.5 + par) * H * amp * (1 - Math.abs(lf * 2 - 1));
+      ctx.fillRect(x, 0, 2, Math.round(h));
+    }
+  }
+}
+function drawCaveArch(seg) {
+  const x = seg.p1.screen.x, y = seg.p1.screen.y, w = seg.p1.screen.w;
+  if (w > W * 4) return;
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, seg.clip); ctx.clip();
+  ctx.lineWidth = Math.max(1, w * 0.2); ctx.strokeStyle = '#0b0910';
+  ctx.beginPath(); ctx.ellipse(x, y, w * 1.4, w * 1.5, 0, Math.PI, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = Math.max(1, w * 0.025); ctx.strokeStyle = '#2a2036';
+  ctx.beginPath(); ctx.ellipse(x, y, w * 1.3, w * 1.4, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  const s = Math.max(1, w * 0.035);
+  for (let k = 0; k < 5; k++) {
+    const a = Math.PI * (1.15 + k * 0.17 + hash(seg.index + k) * 0.05);
+    const c = CRYS[(seg.index / 16 + k) % 4 | 0][1];
+    const px = x + Math.cos(a) * w * 1.3, py = y + Math.sin(a) * w * 1.4;
+    glow(ctx, px, py, s * 4, c, 0.5); ctx.fillStyle = `rgb(${c})`; ctx.fillRect(px - s / 2, py - s, s, s * 2);
+  }
+  ctx.restore();
+}
+function drawCaveDark() {
+  // the cave swallows the light; only the headlights push into it
+  const dk = ctx.createRadialGradient(W / 2, H * 0.9, H * 0.1, W / 2, H * 0.6, W * 0.75);
+  dk.addColorStop(0, 'rgba(0,0,0,0)'); dk.addColorStop(1, 'rgba(0,0,0,0.72)');
+  ctx.fillStyle = dk; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+  const bg = ctx.createLinearGradient(0, H, 0, H * 0.52);
+  bg.addColorStop(0, 'rgba(255,230,170,0.16)'); bg.addColorStop(1, 'rgba(255,230,170,0)');
+  ctx.fillStyle = bg; ctx.beginPath();
+  ctx.moveTo(W / 2 - W * 0.13, H - 16); ctx.lineTo(W / 2 + W * 0.13, H - 16); ctx.lineTo(W / 2 + W * 0.05, H * 0.52); ctx.lineTo(W / 2 - W * 0.05, H * 0.52);
+  ctx.closePath(); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+}
 function drawRib(seg) {
   const x = seg.p1.screen.x, y = seg.p1.screen.y, w = seg.p1.screen.w;
   if (w > W * 4) return;
@@ -1022,6 +1220,7 @@ function drawBackground(e) {
   const now = performance.now();
   if (e.kind === 'sea') return drawSeaBackground(e, now);
   if (e.kind === 'space') return drawSpaceBackground(e, now);
+  if (e.kind === 'cave') return drawCaveBackground(e, now);
   const hz = Math.round(H * 0.5);
   const g = ctx.createLinearGradient(0, 0, 0, hz);
   g.addColorStop(0, rgb(e.sky0)); g.addColorStop(0.6, rgb(e.sky1)); g.addColorStop(1, rgb(e.sky2));
@@ -1082,6 +1281,7 @@ function render() {
     drawSegment(seg.p1.screen.x, seg.p1.screen.y, seg.p1.screen.w, seg.p2.screen.x, seg.p2.screen.y, seg.p2.screen.w, seg.fog, col, env.fogStr, sb.kind === 'space');
     maxy = seg.p1.screen.y;
   }
+  if (env.kind === 'cave') drawCaveDark();
 
   for (let n = DRAW - 1; n > 0; n--) {
     const seg = segments[base.index + n]; if (!seg) continue;
@@ -1100,13 +1300,16 @@ function render() {
         }
       }
       if (n > 1 && seg.index % 4 === 0 && BIOMES[seg.biome].tunnel) drawRib(seg);
+      const cave = BIOMES[seg.biome].kind === 'cave';
+      if (n > 1 && seg.index % 16 === 0 && cave) drawCaveArch(seg);
       for (const car of seg.cars) {
         const pc = (car.z % SEG) / SEG;
         const sc = lerp(seg.p1.screen.scale, seg.p2.screen.scale, pc);
         const sx = lerp(seg.p1.screen.x, seg.p2.screen.x, pc) + sc * car.offset * ROAD_W * K;
         const sy = lerp(seg.p1.screen.y, seg.p2.screen.y, pc);
         if (car.hitT > 0 && Math.floor(car.hitT * 10) % 2) continue;
-        drawSprite(car.sp.img, car.sp.w, sc, sx, sy, -0.5, -1, seg.clip);
+        const img = cave ? SPR.monsters[car.mi][Math.floor(now / 220 + car.mi) % 2] : car.sp.img;
+        drawSprite(img, car.sp.w, sc, sx, sy, -0.5, -1, seg.clip);
       }
       ctx.globalAlpha = 1;
     }
@@ -1114,6 +1317,13 @@ function render() {
   }
 
   ctx.globalAlpha = 1;
+  if (env.kind === 'cave') {
+    for (const s of stars2) {
+      if (s.b < 0.75) continue;
+      ctx.fillStyle = `rgba(200,150,255,${(s.b - 0.7) * (0.6 + 0.4 * Math.sin(now / 500 + s.b * 40))})`;
+      ctx.fillRect(Math.floor(wrapX(s.x * W - bgNear * 0.8 + Math.sin(now / 2500 + s.b * 9) * 10, W)), Math.floor(wrapX(s.y * H - now * 0.004 * s.b, H)), 1, 1);
+    }
+  }
   if (env.kind === 'sea') {
     ctx.fillStyle = 'rgba(90,200,255,0.06)'; ctx.fillRect(0, 0, W, H);
     for (const s of stars2) {
