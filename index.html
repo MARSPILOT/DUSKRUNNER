@@ -610,7 +610,7 @@ function resetWorld() {
   decorate(0, 60);
   ensureGenerated((DRAW + 80) * SEG);
   position = 0; playerX = 0; speed = 0; boost = 0.5; steer = 0;
-  for (let i = 0; i < 14; i++) spawnCar(SEG * 40, SEG * DRAW);
+  for (let i = 0; i < 12; i++) spawnCar(SEG * 40, SEG * DRAW);
 }
 
 const $ = id => document.getElementById(id);
@@ -799,7 +799,7 @@ function update(dt) {
   const front = position + PLAYER_Z;
 
   // traffic
-  const wantCars = Math.min(40, 14 + cpCount * 3);
+  const wantCars = Math.min(34, 12 + Math.floor(cpCount * 2.5));
   if (playing && cars.length < wantCars && Math.random() < dt * 2) spawnCar(front + SEG * DRAW * 0.8, front + SEG * DRAW * 0.98);
   comboT -= dt;
   for (const car of cars) {
